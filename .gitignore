@@ -1,0 +1,48 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Local development
+local/
+*.local
+*.tmp
+
+# Plugins
+plugins/
+
+# Projects
+projects/
+
+# Shell snapshots
+shell-snapshots/
+
+# Statsig
+statsig/
+
+# Todos
+todos/
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Cache
+.cache/
+*.cache
+
+# Temporary files
+tmp/
+temp/
+*.swp
+*.swo
