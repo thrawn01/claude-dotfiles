@@ -190,7 +190,6 @@ Only proceed to planning when you can confidently answer "yes" to implementation
    - Data flow documentation
 
 3. **Testing Requirements**
-   - Test function signatures (e.g., `func TestFunctionName(t *testing.T)`)
    - High-level test objectives
    - Key scenarios to cover
    - Tests validate complete critical path through public APIs only
@@ -233,23 +232,48 @@ type StructName struct {
 }
 ```
 
-3. **Test Signatures**
-```go
-func TestFunctionName(t *testing.T)
-```
-- Test objectives
-- Scenarios to cover
-- Reference to existing test patterns
-
-**What NOT to Include:**
+**General Rule - What NOT to Include for Any Code:**
 - Function body implementations
 - Detailed algorithms or logic flow
 - Specific conditional logic
 - Database query specifics
 - Private function implementations
+
+3. **Testing Requirements**
+
+**CRITICAL: Only include NEW test signatures when the phase adds NEW functionality. For refactoring or modifications, list EXISTING tests that may need updates.**
+
+**When the Phase Adds New Functionality:**
+
+Include signatures for NEW tests only:
+```go
+func TestNewFunctionName(t *testing.T)
+```
+
+For each new test, document:
+- Test objectives (what behavior is being validated)
+- Key scenarios to cover
+- Reference to existing test patterns to follow (e.g., "Follow setup pattern from `auth_test.go:15-23`")
+
+**What NOT to Include in Test Documentation:**
 - Test setup/teardown code
 - Mock implementations
-- Assertions or test data
+- Specific assertions or test data
+- Test function bodies or implementation details
+
+**When the Phase Only Refactors or Modifies Existing Code:**
+
+List EXISTING test functions that may need updates:
+```go
+// Existing tests that may require updates:
+func TestExistingFunction(t *testing.T)  // May need: [specific aspect, e.g., "updated mock responses"]
+func TestRelatedFunction(t *testing.T)   // May need: [specific aspect, e.g., "adjusted assertions"]
+```
+
+**Requirements for Refactoring:**
+- All existing tests must pass after changes
+- Minimize test changes (only update if public APIs or contracts change)
+- Do NOT create new test signatures unless new functionality is being added
 
 ### 4. Document Creation
 1. **Write the plan** to a file
