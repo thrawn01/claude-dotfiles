@@ -6,5 +6,6 @@
     "deny": [
       "Bash:rm"
     ]
-  }
+  },
+  "alwaysThinkingEnabled": true
 }
