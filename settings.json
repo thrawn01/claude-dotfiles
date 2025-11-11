@@ -1,11 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash"
+      "Bash",
+      "Grep",
+      "Glob",
+      "Read",
+      "Task",
+      "BashOutput",
+      "WebFetch",
+      "WebSearch"
     ],
     "deny": [
       "Bash:rm"
     ]
   },
-  "alwaysThinkingEnabled": true
+  "alwaysThinkingEnabled": false
 }
