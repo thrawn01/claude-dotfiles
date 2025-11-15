@@ -44,6 +44,46 @@ A paragraph describing what this change intends to acheive
     assert.Len(t, result.Items, 3)
     ```
 
+## Functional Testing Philosophy
+
+**ALWAYS test the public interface.** Tests should interact with the system as end-users would, never calling internal/private functions directly.
+
+### Core Principles
+
+- **Public Interface Only**: HTTP APIs test via requests, libraries via exported functions, CLIs via command execution
+- **Testable Code Structure**: Design code to be testable from the start
+  - CLIs: `main()` should be thin wrapper calling `Run(ctx, args, opts)`
+  - Servers: Expose `Start()` and `Shutdown()` methods for test lifecycle
+  - Libraries: Export the functions users need
+- **Unreachable Code Decision**: If code cannot be tested via public interface:
+  - Not important? → Remove it (dead code)
+  - Important? → Expose observability (Stats() API, metrics, debug endpoints)
+- **Tests verify behavior**: Poll stats/metrics with `require.Eventually()` to verify internal behavior
+
+### Examples
+
+```go
+// CLI: Testable Run() function
+func main() {
+    os.Exit(cmd.Run(context.Background(), os.Argv[1:], cmd.RunOptions{
+        Stdout: os.Stdout,
+    }))
+}
+
+// Test calls Run() with test args
+exitCode := cmd.Run([]string{"sub-cmd", "-f", "file"}, cmd.RunOptions{
+    Stdout: &stdout,
+})
+
+// Database: Expose Stats() for testing internal behavior
+stats := db.Stats()
+require.Eventually(t, func() bool {
+    return db.Stats().WALWriteCount > 0
+}, time.Second, 10*time.Millisecond)
+```
+
+**See `functional-testing` skill for detailed examples and patterns.**
+
 ## Code Guidelines
 
 - Use `const` for variables that don't change and are used more than once
