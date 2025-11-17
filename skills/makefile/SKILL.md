@@ -1,3 +1,8 @@
+---
+name: makefile
+description: Generate standard Makefile for Go projects with test, lint, clean, fmt, tidy, ci, and coverage targets following best practices
+---
+
 # Generate Standard Makefile
 
 Generate a Makefile with standard targets for Go projects.

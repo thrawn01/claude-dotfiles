@@ -1,3 +1,8 @@
+---
+name: functional-testing
+description: Write functional tests that test public interfaces only (HTTP APIs via requests, libraries via exported functions, CLIs via command execution). Never test internal functions directly. Expose observability APIs for internal behavior testing.
+---
+
 # Functional Testing Philosophy
 
 ## Core Principle
@@ -140,7 +145,7 @@ import (
 
 func TestCreateUser(t *testing.T) {
     server := api.NewServer(api.ServerOptions{
-	   // ... actual or mocked dependencies 
+	   // ... actual or mocked dependencies
     })
 
     ctx, cancel := context.WithCancel(context.Background())
