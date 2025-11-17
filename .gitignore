@@ -46,3 +46,8 @@ tmp/
 temp/
 *.swp
 *.swo
+
+claude-md/
+.credentials.json
+debug/
+history.jsonl
