@@ -1,5 +1,5 @@
 ---
-name: implement-plan-v2
+name: implement-plan
 description: Implement technical plans with verification
 ---
 
