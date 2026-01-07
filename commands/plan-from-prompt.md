@@ -481,7 +481,7 @@ Would you like me to address these, or are you comfortable with the plan as-is?
 
 4. **Execute plan-review command** to validate the plan follows guidelines:
 ```
-Use the SlashCommand tool to execute: /plan-review
+Use the Skill tool to execute: plan-review
 ```
 
 5. **Address any issues** identified by the plan-review command before proceeding to final delivery

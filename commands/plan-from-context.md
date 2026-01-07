@@ -172,14 +172,57 @@ func TestRelatedFunction(t *testing.T)   // May need: [specific aspect, e.g., "a
 ```
 
 ### 5. Review Process
-1. Pass the plan to a sub-agent for review
-2. Sub-agent evaluates for:
-   - **Completeness**: Are all requirements addressed?
-   - **Clarity**: Will another agent understand what to build?
-3. Sub-agent provides questions to improve the plan
-4. Present questions to user
-5. Wait for user responses
-6. Iterate: Refine plan based on answers → Review again → Repeat until satisfactory
+
+1. **Spawn a review agent** to evaluate the plan:
+```
+Subagent Type: general-purpose
+Model: sonnet
+Description: Review implementation plan
+Prompt: Review the implementation plan for completeness and clarity.
+
+Evaluate the plan for:
+1. **Completeness**:
+   - Are all requirements from the original task addressed?
+   - Does each phase have clear acceptance criteria?
+   - Are all integration points documented?
+   - Are validation commands specified?
+
+2. **Clarity**:
+   - Will another AI agent understand what to build without asking questions?
+   - Are function signatures clear and complete?
+   - Are file:line references provided for patterns to follow?
+   - Is the data flow documented?
+
+3. **Missing Information**:
+   - What context might be missing for successful implementation?
+   - Are there ambiguities that could lead to different interpretations?
+   - Are edge cases and error scenarios addressed?
+
+Return a list of specific questions or improvements that would make this plan more complete and clearer. If the plan is excellent, say so and explain why.
+```
+
+2. **Present review findings** to user:
+```
+I've had the plan reviewed. Here are the key points:
+
+**Strengths:**
+- [What's working well]
+
+**Questions/Improvements:**
+- [Specific question or gap identified]
+- [Another area for improvement]
+
+Would you like me to address these, or are you comfortable with the plan as-is?
+```
+
+3. **Iterate based on feedback**: Refine plan → Review again → Repeat until satisfactory
+
+4. **Execute plan-review command** to validate the plan follows guidelines:
+```
+Use the Skill tool to execute: plan-review
+```
+
+5. **Address any issues** identified by the plan-review command before proceeding to final delivery
 
 ### 6. Final Deliverable
 A comprehensive design document that:
