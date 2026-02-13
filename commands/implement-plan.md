@@ -43,6 +43,9 @@ The phase-implementer subagent has built-in knowledge of:
 - When to stop and ask for guidance
 - NOT to commit (you handle commits)
 - NOT to include Co-Authored or emoji in any messages
+- NOT to create temporary test programs (write functional tests instead)
+- NOT to compile binaries (`go run` instead of `go build`)
+- To delete any accidentally created binaries
 
 ## Launching Phase Implementer
 
@@ -138,6 +141,20 @@ The phase-implementer subagent already knows:
 - All necessary information is in the plan itself
 - Not to read external projects unless explicitly required
 
+## Final Linting
+
+After all phases are committed, run the linter as the final verification step:
+
+1. **Run linting**: Execute `make lint` (if the target doesn't exist, run `golangci-lint run` instead)
+2. **Fix any issues**: If linting fails, fix the issues directly (do not spawn a subagent)
+3. **Commit lint fixes**: If changes were made, commit them:
+   ```bash
+   git add .
+   git commit -m "Fix linting issues"
+   ```
+
+Only proceed to report success after linting passes.
+
 ## Success Criteria
 
 All phases are complete when:
@@ -145,6 +162,7 @@ All phases are complete when:
 - All tests pass for all phases
 - All phases are committed to git
 - The complete implementation compiles/builds successfully
+- Linting passes with no errors
 - You report: "All [N] phases implemented successfully"
 
 Remember: Your job is orchestration, not implementation. Let the subagents do the detailed work while you ensure proper sequencing, verification, and commits.

@@ -154,6 +154,9 @@ Need guidance on: [What you're stuck on]
 - Don't include Co-Authored-By or emoji in messages
 - Don't make major plan deviations without approval
 - Don't create documentation/README files unless the plan explicitly requires them
+- Don't create temporary test programs or scripts (write functional tests instead)
+- Don't compile binaries with `go build` - use `go run` if you need to execute locally
+- Don't leave compiled binaries in the repository (delete any you accidentally create)
 
 ## Functional Testing Philosophy
 
