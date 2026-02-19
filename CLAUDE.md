@@ -12,7 +12,9 @@ A paragraph describing what this change intends to acheive
 - An explaination of each major code change made
 ```
 
-## Testing Patterns
+## Testing Patterns (Go)
+
+The following testing patterns apply to Go projects.
 
 - Test MUST always be in the test package `package XXX_test` and not `package XXX`
 - Test names should be in camelCase and start with a capital letter (e.g., `ListAllEnrollments`)
@@ -84,7 +86,9 @@ require.Eventually(t, func() bool {
 
 **See `functional-testing` skill for detailed examples and patterns.**
 
-## Code Guidelines
+## Code Guidelines (Go)
+
+The following code guidelines apply to Go projects.
 
 - Use `const` for variables that don't change and are used more than once
 - Prefer one or two word variable names
@@ -106,25 +110,6 @@ require.Eventually(t, func() bool {
 - Use `const` for variables that do not change. For example, `numEnrollments := 20` should be `const numEnrollments = 20`
 - Do not comment in code that you are following guidelines
 - Use `lo.ToPtr()` from the `github.com/samber/lo` package to create pointers to local variables
-
-## Struct Field Formatting - Visual Tapering
-When formatting struct literals, arrange fields to create a visual tapering effect:
-- Order fields by the length of their complete line (field name + value)
-- Place longer lines toward the top, shorter lines toward the bottom
-- This creates a pleasing diagonal slope from long to short
-- The goal is visual harmony and improved readability, not strict alphabetical or logical ordering
-
-Example:
-```go
-req := pkg.CreateRequest{
-    ThingType:      "THIS_THING_IS_WAY_TOO_DARN_LONG",  // longest line
-    Quantity:       decimal.NewFromInt(100),            // medium length
-    DriversID:      "DL-2134234122132",                 // medium length
-    ThingID:        pkg.ThingTwenty,                    // medium length
-    ThingName:      "thing-20",                         // shorter
-    PackageID:      "pack",                             // shorter
-    Msg:            "hi",                               // shortest
-}
 
 ### Problem Solving
 - Prefer fixing implementation over changing tests - When tests fail after code

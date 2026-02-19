@@ -180,7 +180,7 @@ Only proceed to planning when you can confidently answer "yes" to implementation
 
 2. **Code Architecture**
    - Function signatures for public APIs
-   - Key structs with field definitions and JSON tags
+   - Key types/structs/classes with field definitions
    - Interface definitions
    - Data flow documentation
 
@@ -192,7 +192,7 @@ Only proceed to planning when you can confidently answer "yes" to implementation
    - Note: Implementation should follow TDD approach
 
 4. **Validation Commands**
-   - Specific commands to validate milestone completion (e.g., `go test ./...`, `make build`)
+   - Specific commands to validate milestone completion (e.g., `make test`, `make build`, `go test ./...`, `npm test`, `pytest`)
    - To find validation commands: Check `Makefile`, `package.json` scripts, `justfile`, or similar project automation files
    - Look for existing CI/CD configurations for standard project commands
 
@@ -204,10 +204,13 @@ Only proceed to planning when you can confidently answer "yes" to implementation
 
 #### Documentation Guidelines
 
+Use the project's language for code examples. The examples below use Go syntax — adapt to the actual project language.
+
 **What TO Include:**
 
 1. **Function Signatures and Descriptions**
 ```go
+// Go example — adapt to project language
 // FunctionName performs [high-level purpose]
 func (c *Struct) MethodName(ctx context.Context, arg1 ArgOne) error
 ```
@@ -218,8 +221,9 @@ func (c *Struct) MethodName(ctx context.Context, arg1 ArgOne) error
 - Business logic: "Call existing `BusinessMethod()`"
 - Validation: "Validate inputs using pattern from `validator.go:23`"
 
-2. **Struct Definitions**
+2. **Type/Struct Definitions**
 ```go
+// Go example — adapt to project language
 // StructName represents [domain concept]
 type StructName struct {
     Field1 Type1 `json:"field1"`        // Required: [purpose]
@@ -242,13 +246,14 @@ type StructName struct {
 
 Include signatures for NEW tests only:
 ```go
+// Go example — adapt to project language
 func TestNewFunctionName(t *testing.T)
 ```
 
 For each new test, document:
 - Test objectives (what behavior is being validated)
 - Key scenarios to cover
-- Reference to existing test patterns to follow (e.g., "Follow setup pattern from `auth_test.go:15-23`")
+- Reference to existing test patterns to follow (e.g., "Follow setup pattern from `auth_test.go:15-23`" or equivalent)
 
 **What NOT to Include in Test Documentation:**
 - Test setup/teardown code
@@ -260,6 +265,7 @@ For each new test, document:
 
 List EXISTING test functions that may need updates:
 ```go
+// Go example — adapt to project language
 // Existing tests that may require updates:
 func TestExistingFunction(t *testing.T)  // May need: [specific aspect, e.g., "updated mock responses"]
 func TestRelatedFunction(t *testing.T)   // May need: [specific aspect, e.g., "adjusted assertions"]

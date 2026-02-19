@@ -34,9 +34,11 @@ Use this checklist when creating or reviewing implementation plans to ensure com
 - [ ] Clear separation between "what" (public) and "how" (internal)
 - [ ] Each phase delivers working, testable functionality
 
-## CLAUDE.md Guidelines Compliance
+## CLAUDE.md Guidelines Compliance (Go Projects)
 
-### Testing Patterns
+The following checklist items apply to Go projects. For non-Go projects, verify equivalent patterns in the project's CLAUDE.md.
+
+### Testing Patterns (Go)
 - [ ] Tests in `package XXX_test` (external test package)
 - [ ] Test names in camelCase starting with capital letter
 - [ ] Table-driven tests preferred for parameter validation
@@ -52,14 +54,14 @@ Use this checklist when creating or reviewing implementation plans to ensure com
 - [ ] Avoid DRY in tests (be explicit, repeat when needed)
 - [ ] Tests verify behavior through public interface
 
-### Code Guidelines
+### Code Guidelines (Go)
 - [ ] Use `const` for variables that don't change and are used more than once
 - [ ] Prefer one or two word variable names
 - [ ] Inline values directly if variable used only once
 - [ ] Use full words (not abbreviations) for variable names
 - [ ] Use `lo.ToPtr()` for creating pointers to local variables
 
-### Struct Field Formatting
+### Struct Field Formatting (Go)
 - [ ] Order fields by line length (visual tapering)
 - [ ] Longest lines toward top, shorter toward bottom
 - [ ] Creates pleasing diagonal slope for readability
@@ -116,7 +118,7 @@ A plan is ready for implementation when:
 - [ ] ✅ Plan reviewed by sub-agent and feedback incorporated
 - [ ] ✅ CLAUDE.md guidelines followed throughout
 
-## Quick Reference: Good vs Bad Patterns
+## Quick Reference: Good vs Bad Patterns (Go Examples)
 
 ### ✅ GOOD: Functional Testing Approach
 ```go

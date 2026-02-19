@@ -1,6 +1,6 @@
 ---
-name: implement-plan
-description: Implement technical plans with verification
+name: implement-plan-phase
+description: Implement a single plan phase with human verification
 ---
 
 # Implement A Plan
@@ -21,7 +21,7 @@ When this command is invoked:
 I'll help you implement a plan, please provide the name of the file which
 contains the implementation plan details and I'll read the file and begin implementation
 
-Tip: You can also invoke this command with a ticket file directly: `/implement-plan-v2 plan.md`
+Tip: You can also invoke this command with a plan file directly: `/implement-plan-phase plan.md`
 ```
 
 ## Getting Started
@@ -60,11 +60,11 @@ Use when appropriate to review changes for critical issues:
 - When you want to verify there are no bugs, performance issues, or security vulnerabilities
 - This is optional and should be used based on your judgment of risk/complexity
 
-### claude-enforcement Agent (Go projects only)
-If working with Go code and a CLAUDE.md file exists in the repository:
-- Use after implementing Go code to verify it follows project guidelines
+### codebase-guidelines-validator Agent
+If a CLAUDE.md file exists in the repository:
+- Use after implementing code to verify it follows project guidelines
 - Checks for proper patterns, struct field ordering, naming conventions, etc.
-- Only applicable to Go codebases with established CLAUDE.md standards
+- Applicable to any codebase with established CLAUDE.md standards
 
 **Important**: These agents are tools to help you work efficiently. Use them when they add value, but don't feel obligated to use them for straightforward tasks where you already have the context you need.
 

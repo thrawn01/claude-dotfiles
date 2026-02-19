@@ -1,5 +1,5 @@
 ---
-name: implement-plan-all
+name: implement-plan
 description: Implement all phases of a technical plan sequentially using subagents
 ---
 
@@ -12,7 +12,7 @@ You are tasked with orchestrating the complete implementation of a multi-phase t
 When this command is invoked:
 
 1. **Check if parameters were provided**:
-   - Parameters appear as text after the command (e.g., `/implement-plan-all plans/my-plan.md`)
+   - Parameters appear as text after the command (e.g., `/implement-plan plans/my-plan.md`)
    - If a file path was provided, skip the default message
    - Immediately read the plan file FULLY
    - Begin the orchestration process
@@ -22,7 +22,7 @@ When this command is invoked:
 I'll help you implement all phases of a plan sequentially. Please provide the name of the file which
 contains the implementation plan details and I'll coordinate the phased implementation.
 
-Tip: You can also invoke this command with a plan file directly: `/implement-plan-all plans/my-plan.md`
+Tip: You can also invoke this command with a plan file directly: `/implement-plan plans/my-plan.md`
 ```
 
 ## Orchestration Approach
@@ -44,27 +44,51 @@ The phase-implementer subagent has built-in knowledge of:
 - NOT to commit (you handle commits)
 - NOT to include Co-Authored or emoji in any messages
 - NOT to create temporary test programs (write functional tests instead)
-- NOT to compile binaries (`go run` instead of `go build`)
-- To delete any accidentally created binaries
+- NOT to leave build artifacts in the repository
+
+## Resuming Work
+
+Before starting implementation, check if previous phases have already been completed:
+
+1. **Check plan file for checkboxes**: Scan for `[x]` markers indicating completed phases
+2. **Check git log**: Look for "Implement Phase N:" commit messages to identify completed work
+3. **Skip completed phases**: Start from the first incomplete phase
+4. **Only re-verify previous work** if something seems off (e.g., test failures referencing completed phase code)
+
+If resuming, briefly note which phases were already completed before continuing.
 
 ## Launching Phase Implementer
 
 Use the Task tool with subagent_type "phase-implementer":
 
+For **Phase 1** (no prior context):
+```
+Implement Phase 1: [PHASE_NAME] from the plan at [PLAN_PATH].
+
+Read the plan at [PLAN_PATH] and implement ONLY Phase 1.
+```
+
+For **Phase 2+** (include previous phase summary):
 ```
 Implement Phase [N]: [PHASE_NAME] from the plan at [PLAN_PATH].
 
 Read the plan at [PLAN_PATH] and implement ONLY Phase [N].
+
+Previous phase summary: [Brief summary from the previous phase-implementer's completion report, including key files modified and any decisions made]
 ```
 
-That's it! The phase-implementer subagent knows what to do. No need to repeat guidelines or instructions.
+The previous phase summary gives the subagent awareness of what was just done, reducing redundant exploration. Keep it to 2-3 sentences.
+
+The phase-implementer subagent knows what to do. No need to repeat guidelines or instructions.
 
 ## Verification After Each Phase
 
-The phase-implementer subagent handles all verification (tests, builds, etc.), so you should:
+The phase-implementer subagent handles initial verification, but you should independently confirm:
 
 1. **Review the subagent's completion report**: Check that it says tests passed
-2. **Verify key files exist**: Quick check that expected files were created
+2. **Check scope of changes**: Run `git diff --stat` to see what changed and confirm it aligns with expectations
+3. **Run validation commands independently**: Run the plan's validation commands yourself — don't just trust the subagent's report
+4. **Verify files exist**: Confirm files mentioned in the subagent's report actually exist
 
 If the subagent reports issues or failures:
 - Review what it tried
@@ -72,14 +96,21 @@ If the subagent reports issues or failures:
 - Attempt to resolve if straightforward
 - Ask user for guidance if stuck
 
-The subagent should have already run tests and verified the phase works. Your job is mainly to confirm and commit.
+The subagent should have already run tests and verified the phase works. Your independent verification is a safety net before committing.
+
+After committing a phase, update the plan file's checkboxes to `[x]` for all completed items using Edit. This creates persistent state that survives session boundaries and enables resume capability.
 
 ## Git Commits
 
-After successfully verifying each phase, create a descriptive commit:
+After successfully verifying each phase:
+
+1. **Review changes**: Run `git status` to see all modified/created files
+2. **Stage specific files**: Stage only the files listed in the subagent's "Files created/modified" report — do NOT use `git add .`
+3. **Review staged diff**: Run `git diff --cached` to confirm what will be committed
+4. **Never stage** files that look like secrets (`.env`, credentials), build artifacts, or editor config files
+5. **Commit** with a descriptive message:
 
 ```bash
-git add .
 git commit -m "Implement Phase [N]: [Phase Name]
 
 - [Key change 1]
@@ -110,10 +141,11 @@ Extract the key changes from the phase-implementer's completion report.
 
 ## Progress Tracking
 
-Use the TodoWrite tool to track overall progress:
-- Create todos for each phase
-- Mark phases as in_progress when launching subagent
-- Mark phases as completed after successful verification and commit
+Use TaskCreate, TaskUpdate, and TaskList to track overall progress:
+- At the start, create one task per phase using TaskCreate (e.g., "Implement Phase 1: [Name]")
+- Mark a task as `in_progress` using TaskUpdate when launching its subagent
+- Mark a task as `completed` using TaskUpdate after successful verification and commit
+- Use TaskList to review progress before starting the next phase
 - This gives the user visibility into which phase is currently being implemented
 
 ## Handling Issues
@@ -143,13 +175,15 @@ The phase-implementer subagent already knows:
 
 ## Final Linting
 
-After all phases are committed, run the linter as the final verification step:
+After all phases are committed, run linting as the final verification step:
 
-1. **Run linting**: Execute `make lint` (if the target doesn't exist, run `golangci-lint run` instead)
+1. **Detect linting approach** (in order of preference):
+   - Check for Makefile targets: `make lint`, `make check`, or `make verify`
+   - Detect from project files: `golangci-lint run` (Go), `npx eslint .` (JS/TS), `ruff check .` (Python), `cargo clippy` (Rust)
+   - If no linter is detected, skip this step
 2. **Fix any issues**: If linting fails, fix the issues directly (do not spawn a subagent)
-3. **Commit lint fixes**: If changes were made, commit them:
+3. **Commit lint fixes**: If changes were made, stage the specific fixed files and commit:
    ```bash
-   git add .
    git commit -m "Fix linting issues"
    ```
 
