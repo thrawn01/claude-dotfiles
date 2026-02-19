@@ -111,7 +111,7 @@ func TestRelatedFunction(t *testing.T)   // May need: [specific aspect, e.g., "a
 - Do NOT create new test signatures unless new functionality is being added
 
 ### 4. Document Creation
-1. **Write the plan** to a file
+1. **Write the plan** to a file at `plans/<descriptive-name>-implementation-plan.md`
 2. **Use this template structure**:
 ```markdown
 # [Feature/Task Name] Implementation Plan
@@ -156,12 +156,12 @@ func TestRelatedFunction(t *testing.T)   // May need: [specific aspect, e.g., "a
 // Function Signatures of methods or functions to create
 ```
 
-**Function Responsiblities:**
+**Function Responsibilities:**
 - Bullet point list of what the function must do
 
 **Testing Requirements:**
 ```[language]
-// Function siguatures of Tests to update or create
+// Function signatures of Tests to update or create
 ```
 
 **Test Objectives:**
@@ -169,70 +169,63 @@ func TestRelatedFunction(t *testing.T)   // May need: [specific aspect, e.g., "a
 
 **Context for implementation:**
 - Bullet point list of context valid for the implementation of this phase
+
+### Validation
+- [ ] Run: `[specific command]`
+- [ ] Verify: [expected outcome]
 ```
 
-### 5. Review Process
+### 5. Review Process (MANDATORY)
 
-1. **Spawn a review agent** to evaluate the plan:
+1. **Spawn a review agent** to evaluate the plan using the Task tool (subagent_type: "general-purpose", model: "sonnet"). Ask it to review the plan at `plans/[filename].md` for completeness, clarity, and missing information. It should evaluate whether another AI agent could implement the plan without asking questions, whether all requirements are addressed, and whether there are ambiguities or missing edge cases.
+
+2. **Present review findings** to user, including strengths and any questions or improvements identified. Ask if they want changes addressed.
+
+3. **Iterate based on feedback**: Refine plan, review again, repeat until satisfactory.
+
+4. **Execute plan-review skill** to validate the plan follows guidelines:
 ```
-Subagent Type: general-purpose
-Model: sonnet
-Description: Review implementation plan
-Prompt: Review the implementation plan for completeness and clarity.
-
-Evaluate the plan for:
-1. **Completeness**:
-   - Are all requirements from the original task addressed?
-   - Does each phase have clear acceptance criteria?
-   - Are all integration points documented?
-   - Are validation commands specified?
-
-2. **Clarity**:
-   - Will another AI agent understand what to build without asking questions?
-   - Are function signatures clear and complete?
-   - Are file:line references provided for patterns to follow?
-   - Is the data flow documented?
-
-3. **Missing Information**:
-   - What context might be missing for successful implementation?
-   - Are there ambiguities that could lead to different interpretations?
-   - Are edge cases and error scenarios addressed?
-
-Return a list of specific questions or improvements that would make this plan more complete and clearer. If the plan is excellent, say so and explain why.
+Use the Skill tool to execute: /plan-review
 ```
 
-2. **Present review findings** to user:
-```
-I've had the plan reviewed. Here are the key points:
-
-**Strengths:**
-- [What's working well]
-
-**Questions/Improvements:**
-- [Specific question or gap identified]
-- [Another area for improvement]
-
-Would you like me to address these, or are you comfortable with the plan as-is?
-```
-
-3. **Iterate based on feedback**: Refine plan → Review again → Repeat until satisfactory
-
-4. **Execute plan-review command** to validate the plan follows guidelines:
-```
-Use the Skill tool to execute: plan-review
-```
-
-5. **Address any issues** identified by the plan-review command before proceeding to final delivery
+5. **Address any issues** identified by the plan-review command before proceeding to final delivery.
 
 ### 6. Final Deliverable
+
+**MANDATORY**: The plan must be written to `plans/<descriptive-name>-implementation-plan.md`
+
 A comprehensive design document that:
-- Provides complete context for a new AI agent session
+- Provides complete context for a NEW AI agent in a SEPARATE session (not you)
 - Includes all discovered patterns and references
 - Clearly defines what to build without implementation details
 - Specifies validation criteria for each phase
 - Notes that TDD approach should be used for implementation
 
+**This plan will be implemented by a DIFFERENT agent using `/implement-plan` command.**
+
+### 7. Plan Delivery (MANDATORY FINAL STEP)
+
+After completing steps 1-6:
+
+1. **Confirm plan is written** to `plans/<descriptive-name>-implementation-plan.md`
+2. **Confirm review completed** with sub-agent (as per step 5)
+3. **Present final summary** to user including: number of phases, that file:line references and validation commands are included, the file path created, and a reminder to run `/implement-plan` when ready
+4. **STOP HERE** - Do not proceed beyond this point
+
+## Boundaries
+
+After completing the plan:
+- DO NOT ask "Ready to proceed with implementation?"
+- DO NOT offer to start implementing the plan yourself
+- DO NOT create a "Next Steps" section about implementation
+- DO NOT suggest beginning Phase 1 or ask about timeline
+- DO write the plan to a file
+- DO review the plan with a sub-agent (mandatory)
+- DO ask if they want clarifications or changes to the plan
+- DO remind them to use `/implement-plan` when ready to implement
+
 ## Success Criteria
+
 The plan serves as an architectural blueprint providing:
 - Clear interface contracts
 - Component interaction patterns
