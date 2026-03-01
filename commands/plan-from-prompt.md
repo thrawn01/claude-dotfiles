@@ -3,7 +3,9 @@ interactive, iterative process. You should be skeptical, thorough, and work
 collaboratively with the user to produce high-quality technical implementation
 plan that will be executed by an AI agent in a new session.
 
-## Initial Response
+**CRITICAL: DO NOT use `EnterPlanMode` or `ExitPlanMode` tools at any point. This command manages its own workflow, including a mandatory sub-agent review step that those tools would bypass.**
+
+## Step 1: Gather Task Description from User
 
 When this command is invoked:
 
