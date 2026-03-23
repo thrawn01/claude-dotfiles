@@ -3,7 +3,8 @@
 - You MUST NOT include Claude attribution in commit or description messages
 
 ## Pull Requests
-- You MUST format the description as follows
+- When a skill provides its own PR template, use the skill's template instead of the format below
+- Otherwise, you MUST format the description as follows
 ```
 ### Purpose
 A paragraph describing what this change intends to acheive
