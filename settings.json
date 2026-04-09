@@ -14,5 +14,9 @@
       "Bash:rm"
     ]
   },
-  "alwaysThinkingEnabled": true
+  "enabledPlugins": {
+    "gopls-lsp@claude-plugins-official": true
+  },
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high"
 }
