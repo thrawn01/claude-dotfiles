@@ -1,3 +1,8 @@
+---
+name: plan-from-context
+description: You are tasked with creating detailed implementation plan based on the context
+---
+
 You are tasked with creating detailed implementation plan based on the context
 of the existing conversation. Your goal is to produce high-quality technical implementation
 plan that will be executed by an AI agent in a new session.

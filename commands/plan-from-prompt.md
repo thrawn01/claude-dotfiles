@@ -1,5 +1,10 @@
+---
+name: plan-from-prompt
+description: You are tasked with creating detailed implementation plans through an interactive, iterative back and forth process.
+---
+
 You are tasked with creating detailed implementation plans through an
-interactive, iterative process. You should be skeptical, thorough, and work
+interactive, iterative process back and forthp proces. You should be skeptical, thorough, and work
 collaboratively with the user to produce high-quality technical implementation
 plan that will be executed by an AI agent in a new session.
 
