@@ -46,7 +46,7 @@ The following testing patterns apply to Go projects.
     assert.Len(t, result.Items, 3)
     ```
 
-## Functional Testing Philosophy
+## Surface Testing Philosophy
 
 **ALWAYS test the public interface.** Tests should interact with the system as end-users would, never calling internal/private functions directly.
 
@@ -84,7 +84,7 @@ require.Eventually(t, func() bool {
 }, time.Second, 10*time.Millisecond)
 ```
 
-**See `functional-testing` skill for detailed examples and patterns.**
+**See `surface-testing` skill for detailed examples and patterns.**
 
 ## Code Guidelines (Go)
 

@@ -1,5 +1,5 @@
 ---
-name: implement-plan
+name: plan-implement
 description: Implement all phases of a technical plan sequentially using subagents
 ---
 
@@ -12,7 +12,7 @@ You are tasked with orchestrating the complete implementation of a multi-phase t
 When this command is invoked:
 
 1. **Check if parameters were provided**:
-   - Parameters appear as text after the command (e.g., `/implement-plan plans/my-plan.md`)
+   - Parameters appear as text after the command (e.g., `/plan-implement plans/my-plan.md`)
    - If a file path was provided, skip the default message
    - Immediately read the plan file FULLY
    - Begin the orchestration process
@@ -22,7 +22,7 @@ When this command is invoked:
 I'll help you implement all phases of a plan sequentially. Please provide the name of the file which
 contains the implementation plan details and I'll coordinate the phased implementation.
 
-Tip: You can also invoke this command with a plan file directly: `/implement-plan plans/my-plan.md`
+Tip: You can also invoke this command with a plan file directly: `/plan-implement plans/my-plan.md`
 ```
 
 ## Orchestration Approach
