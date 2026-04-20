@@ -41,6 +41,10 @@ The surface is the `Run()` function. Call it with arguments and capture output. 
 ### Is this a library consumed by other packages?
 The surface is the exported/public functions. Call them the way a consumer would. Do not call unexported/private functions.
 
+This applies especially to libraries with complex internals — parsers are the classic case, where it's tempting to test the tokenizer or state machine directly. Don't.
+
+> **Why this matters — a true story.** A MIME parser accumulated 3,000 tests against its public `Parse()` function over years of hitting real-world edge cases (MIME is notorious — multiple RFCs, clients that ignore the spec, adversarial inputs). Later, a developer rewrote the entire parser from recursive-descent to a stateful non-recursive implementation. The 3,000 surface tests validated the rewrite end-to-end — proving the new parser was both correct and faster than the original. Tests against the recursive internals would have been thrown away with the recursion, giving no signal about whether the replacement was equivalent. The surface tests outlived the implementation.
+
 ### I found an unexported/private function I want to test. What do I do?
 Don't test it directly. Trace backward: which public entry point exercises this function? Write your test through that entry point instead. If no public entry point reaches this code, either the code is dead and should be removed, or the design needs to change to make the behavior reachable.
 
@@ -237,11 +241,149 @@ func TestOrderProcessing(t *testing.T) {
 
 The async work resulted in a billing record. That's observable through the public interface. No special APIs needed — just poll the downstream result.
 
-### Using Fakes to Capture Output at External Boundaries
+### Substituting External Dependencies: Prefer Real Fakes
 
-When async behavior produces output to an external system (message broker, object store, email service, payment gateway), replace that external dependency with a fake that captures what was sent to it. The system under test still boots fully and enters through the surface — only the external boundary is replaced.
+When behavior produces output to an external system — an object store, message broker, email service, payment gateway — you need to substitute that dependency so tests are hermetic. The question is *how much of the production code path stays in play*. The more real stack a test exercises — real TCP, real HTTP client, real serialization, real connection pooling — the more production bugs it can catch.
 
-Fakes are injected through the options struct:
+A **real fake** is a faithful reimplementation of the external service's protocol. Your application talks to it over the same wire protocol it would use in production, exercising the same client library, codec paths, and connection handling. A **hand-written fake** substitutes those away — it encodes *your understanding* of how the service behaves, and when that understanding is incomplete or drifts, tests pass while production breaks.
+
+Prefer substitutes in this order, ranked by how much of the real stack they preserve:
+
+1. **In-process fake library** in your language — fastest, exercises the real protocol, no external process.
+2. **Testcontainers running a published fake container** — exercises the real protocol across a real network hop; slower startup.
+3. **Hand-written fake** — only when no published substitute exists for the service.
+
+> **Why this matters — a true story.** A team used a real Go DNS server in their tests, configured in code. Their service made actual DNS calls against it. A new version of Go changed resolver behavior in a subtle way, and the test suite caught the regression before the production deploy. A mocked resolver would have shipped the bug. This is the payoff of keeping the real stack in play.
+
+**What counts as "external"?** Any service outside the deployment unit the test exercises. If five microservices live in the same repo, a test of service A still substitutes B through E — the test's job is to verify *this* service, not the others. If a dependent service is in the same language and ships an embedded constructor, that's the highest-fidelity substitute — see below.
+
+Never substitute components *inside* the deployment unit — internal services, handlers, domain logic. If it's inside the surface, it runs for real.
+
+#### In-Process Substitute (Preferred)
+
+Two forms, same tier — both run in-process and exercise the real wire protocol, so either is preferred over testcontainers or hand-written fakes.
+
+**Embedded real service (highest fidelity).** When the dependent service is in the same language and ships an embedded constructor (by convention `NewEmbedded()` or similar), the real service can be booted in-process with minimal wiring. Consumers call it directly from their tests:
+
+```go
+func TestOrderWithPayments(t *testing.T) {
+    // Given: the payments service running embedded — real code, real handlers
+    payments := paymentssvc.NewEmbedded(paymentssvc.EmbeddedOptions{
+        // payments' own external deps get substituted here, recursively
+    })
+    defer payments.Shutdown()
+
+    // Given: the order service wired to the embedded payments service
+    server := api.NewServer(api.ServerOptions{
+        PaymentsURL: payments.URL(),
+    })
+    go server.Start("localhost:0")
+    defer server.Shutdown()
+
+    // When/Then: exercise through the Order surface — real payments code runs
+}
+```
+
+This is higher fidelity than any fake: the *real* payments code runs, using its real business logic, real HTTP handlers, and real wire protocol. You only substitute the payments service's own external dependencies (recursively applying the same rules).
+
+**Services consumed by other services should ship an embedded constructor.** This is the provider-side obligation: making a service easy to boot in-process is what lets its consumers write high-fidelity tests against it. An in-memory store (see the Databases section below) is often a prerequisite for a good embedded mode.
+
+**Published in-process fake library.** When no embedded version of the dependent service is available (or the service is third-party), check whether a published in-process fake library exists. For example, [gofakes3](https://github.com/johannesboyne/gofakes3) is an in-process S3-compatible server:
+
+```go
+func TestImageUpload(t *testing.T) {
+    // Given: an in-process S3 fake
+    backend := s3mem.New()
+    s3srv := httptest.NewServer(gofakes3.New(backend).Server())
+    defer s3srv.Close()
+
+    // Given: a running server wired to the fake
+    server := api.NewServer(api.ServerOptions{
+        S3Endpoint: s3srv.URL,
+        S3Bucket:   "images",
+    })
+    go server.Start("localhost:0")
+    defer server.Shutdown()
+
+    // When: uploading an image through the HTTP surface
+    resp, err := http.Post(server.URL()+"/images", "image/png", bytes.NewReader(pngBytes))
+    require.NoError(t, err)
+    assert.Equal(t, http.StatusCreated, resp.StatusCode)
+
+    // Then: the object exists in S3 — verified via the real S3 protocol
+    obj, err := newS3Client(s3srv.URL).GetObject(ctx, &s3.GetObjectInput{
+        Bucket: aws.String("images"),
+        Key:    aws.String("expected-key"),
+    })
+    require.NoError(t, err)
+    require.NotNil(t, obj)
+}
+```
+
+Look for equivalent libraries for the service you need to substitute (Kafka, Redis, SMTP, etc.). When one exists in your language, use it — you get real protocol behavior without paying for a container.
+
+#### Testcontainers (When No In-Process Library Exists)
+
+When no in-process fake exists but the service's authors publish a fake as a container, use testcontainers. For example, [sculley/fake-s3](https://github.com/sculley/fake-s3) publishes an S3 fake as a Docker image:
+
+```go
+func TestImageUpload(t *testing.T) {
+    ctx := context.Background()
+
+    // Given: a fake S3 running in a container
+    container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+        ContainerRequest: testcontainers.ContainerRequest{
+            Image:        "sculley/fake-s3",
+            ExposedPorts: []string{"4569/tcp"},
+            WaitingFor:   wait.ForListeningPort("4569/tcp"),
+        },
+        Started: true,
+    })
+    require.NoError(t, err)
+    defer container.Terminate(ctx)
+
+    endpoint, err := container.Endpoint(ctx, "http")
+    require.NoError(t, err)
+
+    // Given: a running server wired to the container fake
+    server := api.NewServer(api.ServerOptions{S3Endpoint: endpoint})
+    go server.Start("localhost:0")
+    defer server.Shutdown()
+
+    // When/Then: exercise the surface and assert the downstream S3 result —
+    // same shape as the in-process version, with an extra network hop.
+}
+```
+
+Testcontainers is slower than in-process but still runs the real protocol over a real network connection. Reach for it only when an in-process fake doesn't exist.
+
+#### Hand-Written Fake (Last Resort)
+
+Only when no published substitute exists should you write your own. A hand-written fake skips the wire protocol entirely — no TCP, no serialization, no client-library code path. You're testing your handler against your mental model, not against real service behavior. That's why it's the last resort.
+
+Keep it simple — a recorder that captures what was sent:
+
+```go
+type FakeEventBroker struct {
+    mu     sync.Mutex
+    events []Event
+}
+
+func (f *FakeEventBroker) Publish(event Event) error {
+    f.mu.Lock()
+    defer f.mu.Unlock()
+    f.events = append(f.events, event)
+    return nil
+}
+
+func (f *FakeEventBroker) Events() []Event {
+    f.mu.Lock()
+    defer f.mu.Unlock()
+    return append([]Event{}, f.events...)
+}
+```
+
+Inject the fake through the options struct and assert on what it captured:
 
 ```go
 func TestOrderEmitsEvent(t *testing.T) {
@@ -271,31 +413,9 @@ func TestOrderEmitsEvent(t *testing.T) {
 }
 ```
 
-The fake is simple — it just records what it received:
-
-```go
-type FakeEventBroker struct {
-    mu     sync.Mutex
-    events []Event
-}
-
-func (f *FakeEventBroker) Publish(event Event) error {
-    f.mu.Lock()
-    defer f.mu.Unlock()
-    f.events = append(f.events, event)
-    return nil
-}
-
-func (f *FakeEventBroker) Events() []Event {
-    f.mu.Lock()
-    defer f.mu.Unlock()
-    return append([]Event{}, f.events...)
-}
-```
-
-**Key distinction**: fakes replace *external* dependencies at the system boundary — services your application talks to but doesn't own. Never fake internal components like repositories, services, or handlers. If it's inside the surface, it runs for real.
-
 #### Kotlin/Micronaut Equivalent
+
+The same hierarchy applies on the JVM: prefer a real in-process fake (many services have JVM-embedded versions), then testcontainers, then a hand-written fake as last resort. Whichever you use, substitute it at the DI boundary:
 
 ```kotlin
 @MicronautTest
@@ -339,9 +459,57 @@ class OrderControllerTest {
 
 **Never use `@MockBean` for internal components.** If you find yourself writing `@MockBean(UserService::class)` or `@MockBean(OrderRepository::class)`, you are testing implementation, not behavior.
 
-`await().atMost()` (from the Awaitility library) serves the same role as Go's `require.Eventually` — it polls until async behavior becomes observable. This pattern is essential when testing through the surface, because the response returns before the async work completes.
+`await().atMost()` (from the Awaitility library) serves the same role as Go's `require.Eventually` — it polls until async behavior becomes observable.
 
 Micronaut provides both `@MockBean` and `@Replaces` for substituting dependencies. Either works — the rule is the same: only substitute *external* boundaries, never internal components.
+
+### Controlling Time
+
+Time is a cross-cutting concern, not an external dependency — but it still needs to be controlled by tests. Routing time reads through an injected clock does not violate "never substitute internal components": a clock is effectively a global dependency, and making it injectable is what makes time-dependent behavior (retries, expiries, scheduled flushes) testable without sleeping.
+
+For Go, use a package like [kapetan-io/tackle/clock](https://github.com/kapetan-io/tackle/tree/main/clock). Create a per-test provider with `clock.NewProvider()`, freeze it, and inject it into the service through its options struct. Production code reads time through the injected provider's `Now()`, `After()`, `NewTimer()`, etc. — so freezes and advances propagate to every code path that uses it:
+
+```go
+func TestRetryAfterBackoff(t *testing.T) {
+    // Given: a frozen clock provider to inject into the service
+    clk := clock.NewProvider()
+    clk.Freeze(time.Now())
+    defer clk.UnFreeze()
+
+    // Given: a running server with the clock injected
+    server := api.NewServer(api.ServerOptions{Clock: clk})
+    go server.Start("localhost:0")
+    defer server.Shutdown()
+
+    // When: kicking off an operation that retries after 30s
+    resp, err := http.Post(server.URL()+"/jobs", "application/json", strings.NewReader(`{}`))
+    require.NoError(t, err)
+    assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+    // Then: advancing past the backoff fires the retry
+    clk.Advance(31 * time.Second)
+    require.Eventually(t, func() bool {
+        return jobStatus(server) == "retried"
+    }, time.Second, 10*time.Millisecond)
+}
+```
+
+**Pitfall: inject consistently, don't capture.** The clock must be injected into the service — every time read in the service has to go through the injected provider. If a code path bypasses it (calls `time.Now()` directly, or captures `clock.Realtime()` at construction), those paths won't see the freeze, and the test will either fail intermittently or silently rely on real wall-clock time. This is a common gotcha — expect to be caught by it at least once before the pattern sticks.
+
+Kotlin/JVM has similar options: `java.time.Clock` injected via DI (Micronaut can bind a mutable test `Clock` in a test context), or `TestCoroutineScheduler` for coroutine-based timing. The principle is the same — route all time reads through an injectable source, and inject a controllable version in tests.
+
+### Fault Injection at the Boundary
+
+Some behaviors only show up under failure — retries, circuit breakers, fallback paths, crash recovery. The happy path can't exercise them, and reaching inside to make a specific function return an error couples the test to implementation.
+
+**Inject faults at the dependency boundary, not inside the system.** The system under test should see a real network error, a real timeout, a real disconnect — indistinguishable from what would happen in production.
+
+- **Real dependencies via testcontainers:** kill or pause the container, or put [toxiproxy](https://github.com/Shopify/toxiproxy) between the app and the dependency to inject latency, resets, or partitions. The app still uses its real client, real retry logic, real timeouts.
+- **In-process or hand-written fakes:** give them a small "next call fails with X" hook. The fault enters through the same wire protocol the app would see in production.
+
+Assert on observable recovery through the surface — the request eventually succeeds, the circuit-breaker state is reported via a status endpoint, the retry count is visible in `Stats()`. If the recovery isn't observable anywhere, either expose it (next section) or the behavior isn't important enough to test.
+
+Never inject a fault by mocking an internal function to return an error. That tests whether your error handling compiles, not whether it works.
 
 ### Last Resort: Expose Observability APIs
 
@@ -403,6 +571,61 @@ Can I assert the result through the public interface?
                   that serves both tests and production users
 ```
 
+## Databases Are a Special Case
+
+Databases sit outside your surface — they are external dependencies — but they are the most tightly coupled external dependency your system has. Query semantics, transaction boundaries, isolation levels, constraint behaviors, and migration correctness all live in the database. Hand-written database fakes and in-memory substitutes almost always diverge from the real database in ways that matter (transaction and rollback semantics, null ordering, unique-constraint timing, and row-level locking are common traps).
+
+**The default: use the real database.** Start it with testcontainers or a local instance wired for tests. This is the only way to exercise the real driver, the real wire protocol, the real query planner, and the real constraint system. It's also the only way to catch migration bugs — so **use your real migrations in tests too**, never inline schema creation. The migrations themselves are part of what the test validates.
+
+### The Store/Repository Pattern Lets You Opt Into Speed
+
+Some tests don't care about database behavior — they exercise business logic and only use the database as passive state. For those tests, a real database is unnecessary overhead. To opt into a faster path without losing the real-database safety net, structure data access behind a store interface (sometimes called a repository):
+
+```go
+type OrderStore interface {
+    Save(ctx context.Context, order Order) error
+    Get(ctx context.Context, id string) (Order, error)
+    ListPending(ctx context.Context) ([]Order, error)
+}
+
+type PostgresOrderStore struct { /* real impl */ }
+type InMemoryOrderStore struct { /* map-backed impl */ }
+```
+
+Tests inject whichever store fits the scenario:
+
+- **Tests exercising database-adjacent behavior** (complex queries, constraints, transactions, migrations) — `PostgresOrderStore` wired via testcontainers.
+- **Tests exercising business logic that happens to persist state** — `InMemoryOrderStore` for speed.
+
+Both paths still enter through the surface. The store choice is an injected dependency, not a shortcut around the surface. Never substitute the store with a mock that asserts `verify { store.save(any()) }` — that's testing implementation. The in-memory store is a *real* implementation: it persists and returns data. Tests assert on observable results through the surface, not on which store methods were called.
+
+### The Cost of Building an In-Memory Store
+
+Building an in-memory store is not a free optimization. It introduces a second implementation of your data layer that must remain behaviorally equivalent to the real database — and the two *will* drift. Every new feature that adds a query or a constraint adds surface area where drift can happen silently.
+
+**If you build one, you must test for parity.** Two valid models, chosen by intent:
+
+**Option 1 — Run the full suite against both implementations.** Every test that touches the store runs twice, once with the real database and once with the in-memory impl. Highest cost, highest safety.
+
+**Option 2 — A dedicated store-contract suite.** A focused test suite validates that both implementations behave identically for the operations the application uses. Feature tests then pick one store (real database by default, in-memory when speed matters) and trust the contract suite to catch divergence. Lower cost, reasonable safety.
+
+Which model to pick is a judgment call driven by *what the in-memory store is for*:
+
+- If the in-memory store is **also a deployment target** — i.e., the service can run in an embedded or e2e mode without external dependencies — Option 1 is prudent. The in-memory impl is production code, not just a test artifact, and deserves full-suite validation.
+- If the in-memory store exists **only to speed up tests**, Option 2 is usually right. Doubling the full suite rarely pays for itself just to make tests faster.
+
+Either is acceptable — pick based on whether the in-memory path is a product feature or a test optimization.
+
+### The Embedded-Mode Advantage
+
+A well-designed in-memory store gives you more than test speed. It lets the service run in "embedded" or "integration" mode — no database, no network hops — which is valuable for:
+
+- End-to-end tests that exercise multiple services together in a controlled environment.
+- Limited deployment environments where running a full database stack isn't practical.
+- Local development loops where iterating against a real database would slow things down.
+
+If your service needs any of these, the in-memory store pays for itself beyond tests, and that's often what tips the decision toward building one — and toward Option 1 parity testing.
+
 ## Language-Specific Rules
 
 ### Go
@@ -432,7 +655,9 @@ If someone asks "isn't this just integration testing?" — the answer is: surfac
 1. **Test Behavior, Not Implementation**: Tests verify what the system does, not how it does it
 2. **Tests Are End-Users**: If a test needs to call internal functions, the code structure is wrong
 3. **Fix the Design, Not the Test Strategy**: If behavior isn't observable through the surface, change the design to make it observable
-4. **Fakes at Boundaries Only**: Replace external dependencies with fakes; never fake internal components
-5. **Dependency Injection via Options**: Use options structs (Go) or DI context (Micronaut) to inject testable dependencies
-6. **Real Execution**: Tests execute real code paths — the full application boots, all internal components run for real
-7. **Unchanging Tests**: Tests should survive refactoring, new features, and bug fixes — only behavior changes should break tests
+4. **Preserve the Production Stack**: The value of a test is proportional to how much of the production code path it exercises — real TCP, real HTTP clients, real serialization, real migrations. Fidelity is the metric, not speed
+5. **Real Fakes at External Boundaries**: Substitute external dependencies with real fakes (in-process libraries or testcontainers) that exercise the real protocol. Hand-written fakes are a last resort. Never substitute internal components
+6. **Real Database by Default**: Use the real database with real migrations. An in-memory store is a deliberate, parity-tested opt-out — not a shortcut
+7. **Dependency Injection via Options**: Use options structs (Go) or DI context (Micronaut) to inject testable dependencies
+8. **Real Execution**: Tests execute real code paths — the full application boots, all internal components run for real
+9. **Unchanging Tests**: Tests should survive refactoring, new features, and bug fixes — only behavior changes should break tests

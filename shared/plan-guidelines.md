@@ -482,7 +482,7 @@ A comprehensive design document that:
 - Specifies validation criteria for each phase
 - Notes that TDD approach should be used for implementation
 
-**This plan will be implemented by a DIFFERENT agent using `/implement-plan` command.**
+**This plan will be implemented by a DIFFERENT agent using `/plan-implement` command.**
 
 ## Plan Delivery (MANDATORY FINAL STEP)
 
@@ -503,7 +503,7 @@ After completing all steps:
    **Created:**
    - plans/[filename].md
 
-   When ready to implement, run: /implement-plan
+   When ready to implement, run: /plan-implement
    ```
 4. **STOP HERE** - Do not proceed beyond this point
 
@@ -519,7 +519,7 @@ After completing all steps:
 ✅ **DO** write the plan to a file
 ✅ **DO** review the plan with a sub-agent (mandatory)
 ✅ **DO** ask if they want clarifications or changes to the plan
-✅ **DO** remind them to use `/implement-plan` when ready to implement
+✅ **DO** remind them to use `/plan-implement` when ready to implement
 
 ## Success Criteria
 
