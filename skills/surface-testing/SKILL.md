@@ -20,30 +20,19 @@ The "surface" is the outermost layer consumers interact with — HTTP endpoints,
 
 ## Core Rule
 
-**Every test must interact with the system the same way its end users would.** The surface varies by project type:
-
-- **HTTP APIs**: Test by making HTTP requests to a running server
-- **CLIs**: Test by calling the entry point function with arguments and capturing output
-- **Libraries**: Test by calling exported/public functions
-
-Never call internal/private functions directly in tests. If you can't observe a behavior through the surface, that's a design signal — fix the design, not the test strategy.
+**Every test must interact with the system the same way its end users would.** Never call internal/private functions directly in tests. If you can't observe a behavior through the surface, that's a design signal — fix the design, not the test strategy.
 
 ## Finding the Surface
 
-Before writing tests, identify the public interface. Work through these questions in order:
+Before writing tests, identify the public interface:
 
-### Is this an application with an HTTP/gRPC API?
-The surface is the API endpoints. Boot the full application and make real HTTP requests. Do not instantiate controllers, handlers, or services directly.
-
-### Is this a CLI application?
-The surface is the `Run()` function. Call it with arguments and capture output. Do not call subcommand handlers or internal functions directly.
-
-### Is this a library consumed by other packages?
-The surface is the exported/public functions. Call them the way a consumer would. Do not call unexported/private functions.
+- **HTTP/gRPC API**: the endpoints. Boot the full application and make real HTTP requests. Do not instantiate controllers, handlers, or services directly.
+- **CLI**: the `Run()` function. Call it with arguments and capture output. Do not call subcommand handlers or internal functions directly.
+- **Library**: the exported/public functions. Call them the way a consumer would. Do not call unexported/private functions.
 
 This applies especially to libraries with complex internals — parsers are the classic case, where it's tempting to test the tokenizer or state machine directly. Don't.
 
-> **Why this matters — a true story.** A MIME parser accumulated 3,000 tests against its public `Parse()` function over years of hitting real-world edge cases (MIME is notorious — multiple RFCs, clients that ignore the spec, adversarial inputs). Later, a developer rewrote the entire parser from recursive-descent to a stateful non-recursive implementation. The 3,000 surface tests validated the rewrite end-to-end — proving the new parser was both correct and faster than the original. Tests against the recursive internals would have been thrown away with the recursion, giving no signal about whether the replacement was equivalent. The surface tests outlived the implementation.
+> **True story.** A MIME parser accumulated 3,000 tests against its public `Parse()` over years of real-world edge cases. A later rewrite from recursive-descent to a stateful non-recursive implementation was validated end-to-end by those same tests — proving correctness and a speedup. Tests against the recursive internals would have been thrown away with the recursion, giving no signal about equivalence. Surface tests outlived the implementation.
 
 ### I found an unexported/private function I want to test. What do I do?
 Don't test it directly. Trace backward: which public entry point exercises this function? Write your test through that entry point instead. If no public entry point reaches this code, either the code is dead and should be removed, or the design needs to change to make the behavior reachable.
@@ -95,26 +84,11 @@ func Run(args []string, opts RunOptions) int {
 Tests call `Run()` with test arguments and capture output:
 
 ```go
-package cmd_test
-
-import (
-    "bytes"
-    "testing"
-    "yourproject/cmd"
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/require"
-)
-
 func TestSubCommand(t *testing.T) {
-    // Given: captured output
     var stdout bytes.Buffer
-
-    // When: running the subcommand
     exitCode := cmd.Run([]string{"sub-command", "-f", "filename.ext"}, cmd.RunOptions{
         Stdout: &stdout,
     })
-
-    // Then: it succeeds with expected output
     require.Equal(t, 0, exitCode)
     assert.Contains(t, stdout.String(), "expected output")
 }
@@ -125,31 +99,15 @@ func TestSubCommand(t *testing.T) {
 Start a real server in tests and make real HTTP requests:
 
 ```go
-package api_test
-
-import (
-    "net/http"
-    "strings"
-    "testing"
-    "yourproject/api"
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/require"
-)
-
 func TestCreateUser(t *testing.T) {
     // Given: a running server
-    server := api.NewServer(api.ServerOptions{
-        // inject real or test dependencies here
-    })
+    server := api.NewServer(api.ServerOptions{ /* inject real or test deps */ })
     go server.Start("localhost:0")
     defer server.Shutdown()
 
     // When: creating a user via HTTP
-    resp, err := http.Post(
-        server.URL()+"/users",
-        "application/json",
-        strings.NewReader(`{"name":"Alice"}`),
-    )
+    resp, err := http.Post(server.URL()+"/users", "application/json",
+        strings.NewReader(`{"name":"Alice"}`))
     require.NoError(t, err)
     defer resp.Body.Close()
 
@@ -160,7 +118,7 @@ func TestCreateUser(t *testing.T) {
 
 ### HTTP Services (Kotlin/Micronaut)
 
-**Wrong approach** — testing a service in isolation:
+**Wrong approach** — testing a service in isolation, mocking its dependencies, and verifying internal method calls. Breaks on any refactor even if API behavior is unchanged:
 
 ```kotlin
 // DON'T DO THIS
@@ -168,38 +126,26 @@ class UserServiceTest {
     private val repository = mockk<UserRepository>()
     private val service = UserService(repository)
 
-    @Test
-    fun `should create user`() {
+    @Test fun `should create user`() {
         every { repository.save(any()) } returns User("Alice")
-
         val result = service.createUser("Alice")
-
         assertEquals("Alice", result.name)
         verify { repository.save(any()) }
     }
 }
 ```
 
-This test calls the service directly, mocks its dependencies, and verifies internal method calls. It will break on any refactoring of `UserService` even if the API behavior is unchanged.
-
-**Right approach** — boot the full application and go through HTTP:
+**Right approach** — boot the full application via `@MicronautTest` and go through HTTP:
 
 ```kotlin
 @MicronautTest
 class UserControllerTest {
+    @Inject lateinit var client: HttpClient
 
-    @Inject
-    lateinit var client: HttpClient
-
-    @Test
-    fun `should create user`() {
-        // When: creating a user via HTTP
+    @Test fun `should create user`() {
         val response = client.toBlocking().exchange(
             HttpRequest.POST("/users", mapOf("name" to "Alice")),
-            Map::class.java
-        )
-
-        // Then: the response confirms creation
+            Map::class.java)
         assertEquals(HttpStatus.CREATED, response.status)
     }
 }
@@ -253,7 +199,7 @@ Prefer substitutes in this order, ranked by how much of the real stack they pres
 2. **Testcontainers running a published fake container** — exercises the real protocol across a real network hop; slower startup.
 3. **Hand-written fake** — only when no published substitute exists for the service.
 
-> **Why this matters — a true story.** A team used a real Go DNS server in their tests, configured in code. Their service made actual DNS calls against it. A new version of Go changed resolver behavior in a subtle way, and the test suite caught the regression before the production deploy. A mocked resolver would have shipped the bug. This is the payoff of keeping the real stack in play.
+> **True story.** A team used a real Go DNS server in their tests; their service made actual DNS calls against it. A new Go version changed resolver behavior subtly, and the test suite caught the regression before deploy. A mocked resolver would have shipped the bug. That's the payoff of keeping the real stack in play.
 
 **What counts as "external"?** Any service outside the deployment unit the test exercises. If five microservices live in the same repo, a test of service A still substitutes B through E — the test's job is to verify *this* service, not the others. If a dependent service is in the same language and ships an embedded constructor, that's the highest-fidelity substitute — see below.
 
@@ -324,35 +270,23 @@ Look for equivalent libraries for the service you need to substitute (Kafka, Red
 
 #### Testcontainers (When No In-Process Library Exists)
 
-When no in-process fake exists but the service's authors publish a fake as a container, use testcontainers. For example, [sculley/fake-s3](https://github.com/sculley/fake-s3) publishes an S3 fake as a Docker image:
+When no in-process fake exists but the service's authors publish a fake as a container, use testcontainers. The test shape is the same as the in-process version — swap the fake's construction for a container and wire its endpoint to the server:
 
 ```go
-func TestImageUpload(t *testing.T) {
-    ctx := context.Background()
+container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+    ContainerRequest: testcontainers.ContainerRequest{
+        Image:        "sculley/fake-s3",
+        ExposedPorts: []string{"4569/tcp"},
+        WaitingFor:   wait.ForListeningPort("4569/tcp"),
+    },
+    Started: true,
+})
+require.NoError(t, err)
+defer container.Terminate(ctx)
 
-    // Given: a fake S3 running in a container
-    container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-        ContainerRequest: testcontainers.ContainerRequest{
-            Image:        "sculley/fake-s3",
-            ExposedPorts: []string{"4569/tcp"},
-            WaitingFor:   wait.ForListeningPort("4569/tcp"),
-        },
-        Started: true,
-    })
-    require.NoError(t, err)
-    defer container.Terminate(ctx)
-
-    endpoint, err := container.Endpoint(ctx, "http")
-    require.NoError(t, err)
-
-    // Given: a running server wired to the container fake
-    server := api.NewServer(api.ServerOptions{S3Endpoint: endpoint})
-    go server.Start("localhost:0")
-    defer server.Shutdown()
-
-    // When/Then: exercise the surface and assert the downstream S3 result —
-    // same shape as the in-process version, with an extra network hop.
-}
+endpoint, _ := container.Endpoint(ctx, "http")
+server := api.NewServer(api.ServerOptions{S3Endpoint: endpoint})
+// ...exercise the surface and assert the downstream S3 result as before.
 ```
 
 Testcontainers is slower than in-process but still runs the real protocol over a real network connection. Reach for it only when an in-process fake doesn't exist.
@@ -415,53 +349,34 @@ func TestOrderEmitsEvent(t *testing.T) {
 
 #### Kotlin/Micronaut Equivalent
 
-The same hierarchy applies on the JVM: prefer a real in-process fake (many services have JVM-embedded versions), then testcontainers, then a hand-written fake as last resort. Whichever you use, substitute it at the DI boundary:
+The same hierarchy applies on the JVM: prefer a real in-process fake (many services have JVM-embedded versions), then testcontainers, then a hand-written fake as last resort. Substitute at the DI boundary with `@MockBean` or `@Replaces`:
 
 ```kotlin
 @MicronautTest
 class OrderControllerTest {
+    @Inject lateinit var client: HttpClient
+    @Inject lateinit var fakeBroker: FakeEventBroker
 
-    @Inject
-    lateinit var client: HttpClient
-
-    @Inject
-    lateinit var fakeBroker: FakeEventBroker
-
-    @Test
-    fun `should emit order event when order is submitted`() {
-        // When: submitting an order via HTTP
+    @Test fun `should emit order event when order is submitted`() {
         val response = client.toBlocking().exchange(
             HttpRequest.POST("/orders", mapOf("item" to "widget", "qty" to 5)),
-            Map::class.java
-        )
-
-        // Then: the request was accepted
+            Map::class.java)
         assertEquals(HttpStatus.ACCEPTED, response.status)
 
-        // And: an order event was emitted to the broker
         await().atMost(Duration.ofSeconds(1)).untilAsserted {
             val events = fakeBroker.events()
             assertEquals(1, events.size)
             assertEquals("order.created", events[0].type)
-            assertEquals("widget", events[0].payload["item"])
-            assertEquals(5, events[0].payload["qty"])
         }
     }
 
-    @MockBean(EventBroker::class)
-    fun eventBroker(): EventBroker {
-        return FakeEventBroker()
-    }
+    @MockBean(EventBroker::class) fun eventBroker(): EventBroker = FakeEventBroker()
 }
 ```
 
-`@MockBean` here replaces an *external* dependency — the event broker is a system boundary. The full application context still boots, the request still goes through HTTP, and all internal services run for real.
+`@MockBean` here replaces an *external* dependency — the event broker is a system boundary. The full application context still boots, the request still goes through HTTP, and all internal services run for real. `await().atMost()` (Awaitility) is the Kotlin equivalent of Go's `require.Eventually`.
 
-**Never use `@MockBean` for internal components.** If you find yourself writing `@MockBean(UserService::class)` or `@MockBean(OrderRepository::class)`, you are testing implementation, not behavior.
-
-`await().atMost()` (from the Awaitility library) serves the same role as Go's `require.Eventually` — it polls until async behavior becomes observable.
-
-Micronaut provides both `@MockBean` and `@Replaces` for substituting dependencies. Either works — the rule is the same: only substitute *external* boundaries, never internal components.
+**Never use `@MockBean` for internal components.** `@MockBean(UserService::class)` or `@MockBean(OrderRepository::class)` means you are testing implementation, not behavior. Either `@MockBean` or `@Replaces` works — the rule is the same: only substitute *external* boundaries.
 
 ### Controlling Time
 
@@ -494,7 +409,7 @@ func TestRetryAfterBackoff(t *testing.T) {
 }
 ```
 
-**Pitfall: inject consistently, don't capture.** The clock must be injected into the service — every time read in the service has to go through the injected provider. If a code path bypasses it (calls `time.Now()` directly, or captures `clock.Realtime()` at construction), those paths won't see the freeze, and the test will either fail intermittently or silently rely on real wall-clock time. This is a common gotcha — expect to be caught by it at least once before the pattern sticks.
+**Pitfall: inject consistently, don't capture.** Every time read in the service must go through the injected provider. If a code path bypasses it (calls `time.Now()` directly, or captures `clock.Realtime()` at construction), those paths won't see the freeze — tests will either flake or silently rely on wall-clock time. Common gotcha; expect to hit it once before the pattern sticks.
 
 Kotlin/JVM has similar options: `java.time.Clock` injected via DI (Micronaut can bind a mutable test `Clock` in a test context), or `TestCoroutineScheduler` for coroutine-based timing. The principle is the same — route all time reads through an injectable source, and inject a controllable version in tests.
 
@@ -535,27 +450,20 @@ func (db *DB) Stats() Stats {
 
 ```go
 func TestWALPeriodicWrite(t *testing.T) {
-    // Given: a database with a 100ms flush interval
-    db := NewDB(DBOptions{
-        WALFlushInterval: 100 * time.Millisecond,
-    })
+    db := NewDB(DBOptions{WALFlushInterval: 100 * time.Millisecond})
     defer db.Close()
 
-    // When: inserting data
     require.NoError(t, db.Insert("key", "value"))
 
-    // Then: the WAL is eventually flushed and pages are clean
     require.Eventually(t, func() bool {
-        stats := db.Stats()
-        return stats.WALWriteCount > 0 && stats.DirtyPages == 0
+        s := db.Stats()
+        return s.WALWriteCount > 0 && s.DirtyPages == 0
     }, time.Second, 10*time.Millisecond)
-
-    stats := db.Stats()
-    assert.Greater(t, stats.PagesFlushedToWAL, int64(0))
+    assert.Greater(t, db.Stats().PagesFlushedToWAL, int64(0))
 }
 ```
 
-This `Stats()` API isn't test-only code. It's useful in production for monitoring and diagnostics. The test simply uses the same observability a production operator would.
+`Stats()` isn't test-only code — it's useful in production for monitoring and diagnostics. The test uses the same observability a production operator would.
 
 ### Decision Tree
 
@@ -603,18 +511,12 @@ Both paths still enter through the surface. The store choice is an injected depe
 
 Building an in-memory store is not a free optimization. It introduces a second implementation of your data layer that must remain behaviorally equivalent to the real database — and the two *will* drift. Every new feature that adds a query or a constraint adds surface area where drift can happen silently.
 
-**If you build one, you must test for parity.** Two valid models, chosen by intent:
+**If you build one, you must test for parity.** Two valid models:
 
-**Option 1 — Run the full suite against both implementations.** Every test that touches the store runs twice, once with the real database and once with the in-memory impl. Highest cost, highest safety.
+- **Option 1 — Full suite against both implementations.** Every store-touching test runs twice (real DB + in-memory). Highest cost, highest safety. Right when the in-memory store is *also a deployment target* (embedded/e2e mode) — it's production code and deserves full validation.
+- **Option 2 — Dedicated store-contract suite.** A focused suite validates both implementations behave identically for the operations the app uses; feature tests pick one store (real DB by default, in-memory when speed matters) and trust the contract suite to catch drift. Lower cost, reasonable safety. Right when the in-memory store exists *only to speed up tests* — doubling the full suite rarely pays for itself.
 
-**Option 2 — A dedicated store-contract suite.** A focused test suite validates that both implementations behave identically for the operations the application uses. Feature tests then pick one store (real database by default, in-memory when speed matters) and trust the contract suite to catch divergence. Lower cost, reasonable safety.
-
-Which model to pick is a judgment call driven by *what the in-memory store is for*:
-
-- If the in-memory store is **also a deployment target** — i.e., the service can run in an embedded or e2e mode without external dependencies — Option 1 is prudent. The in-memory impl is production code, not just a test artifact, and deserves full-suite validation.
-- If the in-memory store exists **only to speed up tests**, Option 2 is usually right. Doubling the full suite rarely pays for itself just to make tests faster.
-
-Either is acceptable — pick based on whether the in-memory path is a product feature or a test optimization.
+Pick based on whether the in-memory path is a product feature or a test optimization.
 
 ### The Embedded-Mode Advantage
 
@@ -634,30 +536,22 @@ If your service needs any of these, the in-memory store pays for itself beyond t
 
 ### Kotlin/Micronaut
 
-**Tests MUST use `@MicronautTest`** — because this boots the full application context with real dependency injection. If you're instantiating classes with `val service = UserService(mockRepo)`, you've bypassed the surface.
+These rules apply when the project under test is a **Micronaut application** (HTTP service, gRPC service, etc.). For a Kotlin **library**, the surface is its exported public functions — call them directly from tests as a consumer would; `@MicronautTest` does not apply.
+
+**Micronaut-application tests MUST use `@MicronautTest`** — because this boots the full application context with real dependency injection. If you're instantiating classes with `val service = UserService(mockRepo)`, you've bypassed the surface.
 
 **`@MockBean` and `@Replaces` MUST only substitute external boundaries** — because replacing internal components means the test no longer exercises the real code path. If the bean you're replacing lives inside your application, the test is coupled to implementation.
 
 ## How Surface Testing Relates to Integration Testing
 
-Surface testing and integration testing overlap in practice but differ in intent.
+They overlap but differ in intent. **Integration testing** asks "do these components work together correctly?" — focus on the seams (Service A↔B, schema↔ORM). **Surface testing** asks "does the system behave correctly when used as intended?" — focus on observable behavior from the outside.
 
-**Integration testing** asks: "do these components work together correctly?" The focus is on the seams between components — does Service A talk to Service B correctly, does the database schema match the ORM mappings.
-
-**Surface testing** asks: "does the system behave correctly when used the way it's intended to be used?" The focus is on observable behavior from the outside. The test enters through the surface and asserts results a real consumer would see.
-
-Surface tests boot the full application, so internal components are integrating — but the integration is a side effect, not the goal. Surface testing also explicitly replaces external boundaries with fakes, which integration testing typically wouldn't, since the point of integration testing is to wire real things together.
-
-If someone asks "isn't this just integration testing?" — the answer is: surface tests verify behavior through the same interface consumers use, and they fake external boundaries to keep tests fast, deterministic, and focused on your system's behavior. Integration tests verify that real components are wired together correctly. They're complementary, not interchangeable.
+Surface tests boot the full application, so internal components are integrating — but integration is a side effect, not the goal. Surface tests also explicitly fake external boundaries to stay fast, deterministic, and focused on *this* system's behavior; integration tests typically wire real things together. Complementary, not interchangeable.
 
 ## Key Principles
 
-1. **Test Behavior, Not Implementation**: Tests verify what the system does, not how it does it
-2. **Tests Are End-Users**: If a test needs to call internal functions, the code structure is wrong
-3. **Fix the Design, Not the Test Strategy**: If behavior isn't observable through the surface, change the design to make it observable
-4. **Preserve the Production Stack**: The value of a test is proportional to how much of the production code path it exercises — real TCP, real HTTP clients, real serialization, real migrations. Fidelity is the metric, not speed
-5. **Real Fakes at External Boundaries**: Substitute external dependencies with real fakes (in-process libraries or testcontainers) that exercise the real protocol. Hand-written fakes are a last resort. Never substitute internal components
-6. **Real Database by Default**: Use the real database with real migrations. An in-memory store is a deliberate, parity-tested opt-out — not a shortcut
-7. **Dependency Injection via Options**: Use options structs (Go) or DI context (Micronaut) to inject testable dependencies
-8. **Real Execution**: Tests execute real code paths — the full application boots, all internal components run for real
-9. **Unchanging Tests**: Tests should survive refactoring, new features, and bug fixes — only behavior changes should break tests
+1. **Test behavior through the surface**: Tests act as end-users and verify what the system does, not how. If a test needs internal access, the design is wrong — fix the design (expose observability), not the test strategy. Only behavior changes should break tests.
+2. **Preserve the production stack**: A test's value is proportional to how much of the production code path it exercises — real TCP, real HTTP clients, real serialization, real migrations. Fidelity is the metric, not speed.
+3. **Real fakes at external boundaries only**: Substitute externals with real fakes (in-process libraries or testcontainers) that exercise the real protocol. Hand-written fakes are a last resort. Never substitute internal components.
+4. **Real database by default**: Use the real database with real migrations. An in-memory store is a deliberate, parity-tested opt-out — not a shortcut.
+5. **Dependency injection via options**: Use options structs (Go) or DI context (Micronaut) to inject testable dependencies; the full application boots and all internal components run for real.
