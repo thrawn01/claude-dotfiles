@@ -43,6 +43,18 @@ After writing the plan to a file, you MUST:
 4. NEVER ask "Ready to proceed with implementation?"
 5. NEVER create a "Next Steps" section about implementation
 
+## Core Principle: Plans Must Produce Mergeable PRs
+
+When all phases are complete, the resulting PR must pass the project's
+CI checks and be mergeable. This is non-negotiable for the plan as a
+whole, though individual phases may leave the tree in an intermediate
+state when necessary.
+
+During research, investigate what "passing CI" means for this project
+and confirm which of those checks currently pass against the codebase
+as it stands. "Pre-existing" is not an excuse: if an issue would block
+the final merge, some phase must fix it.
+
 ## Process Steps
 
 ### 1. Context Gathering & Initial Analysis
@@ -161,6 +173,8 @@ Stop research and move to planning when ALL of the following are met:
 - [ ] All affected components are identified
 - [ ] Risks are assessed with mitigation strategies
 - [ ] No major unknowns remain that would block implementation
+- [ ] The commands that gate merge are known and have been run against
+      the current codebase; any failures are assigned to a phase.
 
 **Quality Gate:**
 If any checkbox above is unchecked, continue research. Ask yourself:
@@ -202,6 +216,8 @@ Only proceed to planning when you can confidently answer "yes" to implementation
    - Specific commands to validate milestone completion (e.g., `make test`, `make build`, `go test ./...`, `npm test`, `pytest`)
    - To find validation commands: Check `Makefile`, `package.json` scripts, `justfile`, or similar project automation files
    - Look for existing CI/CD configurations for standard project commands
+   - The final phase's validation commands must include the full CI
+     check set and must be expected to pass.
 
 5. **Context for Implementation**
    - Links/paths to relevant existing code files
@@ -310,7 +326,8 @@ func TestRelatedFunction(t *testing.T)   // May need: [specific aspect, e.g., "a
 
 ## What We're NOT Doing
 
-[Explicitly list out-of-scope items to prevent scope creep]
+[Explicitly list out-of-scope items to prevent scope creep. Out-of-scope
+items must not block merge of the final PR.]
 
 ## Implementation Approach
 
