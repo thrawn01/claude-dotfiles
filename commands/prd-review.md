@@ -31,9 +31,9 @@ In Claude Code, once every handoff item is resolved (either answered in the PRD 
 
 ## Finding categories
 
-- **Gaps.** Domains absent or thin — missing success metrics, no non-goals, problem stated in one sentence when it needs three.
+- **Gaps.** Domains absent or thin — no non-goals, problem stated in one sentence when it needs three, no audience statement when the product serves multiple distinct roles. Do not raise "missing success metrics" as a gap unless the PRD makes an outcome claim that requires measurement to verify — success metrics measure whether the PRD was right, not whether the work was done, and their absence is fine when no post-ship outcome is plausible.
 - **Inconsistencies.** Contradictions within the document — scope says X but a user story implies not-X, a constraint rules out something the requirements ask for.
-- **Unresolved open questions.** Questions listed in the Open Questions section without answers, or questions implicit in the text that were never surfaced.
+- **Unresolved open questions.** Questions listed in the Open Questions section without answers, or questions implicit in the text that were never surfaced. When proposing candidate open questions, filter out anything whose answer lives in an interface signature, a config key, an exit code, or a middleware shape — those are tech-spec questions and belong there. PRD open questions concern users, scope, scenarios, and outcomes.
 - **Implicit assumptions.** Things that require context from outside the document to understand. If it requires memory of the original discussion, it needs to be written down.
 - **Scope ambiguity.** Requirements that could be interpreted multiple ways by an engineer — anything that would force a judgment call during implementation that should have been a product decision.
 

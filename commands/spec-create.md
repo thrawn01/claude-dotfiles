@@ -43,7 +43,15 @@ Numbered options let the user respond "go with 2" without re-typing. The inline 
 
 Think through the angles that matter for this feature: interfaces and contracts, data, dependencies, failure modes, security, operations (observability, performance, deployment), and whatever else the PRD and codebase demand. Any unresolved technical questions that need a spike or benchmark also belong in the spec as open items. The goal is to surface the decisions an engineer needs before writing code — not to complete a checklist.
 
-Testing follows the `surface-testing` skill methodology. The spec's job is to identify the testing surfaces: the integration boundary, what can't be reached without fakes, and what needs to be injectable. These surface choices shape the component design. The spec records the surfaces; `surface-testing` governs how tests against them are written.
+Testing follows the `surface-testing` skill methodology. Surface testing prescribes *design* decisions the spec is the right place to lock in — once the component is shaped without these, tests can't recover at write-time. The spec must identify:
+
+- **The surface itself** — the testable entry point. For a CLI, a `Run(args, opts)` function that `main()` delegates to. For a service, a `Start()`/`Shutdown()` lifecycle. For a library, the exported functions consumers call.
+- **External dependencies and their substitutes** — every service, store, or API outside this deployment unit, with the chosen substitute tier (in-process fake > testcontainers > hand-written fake). Name the library or image where one is picked.
+- **Observability APIs for async behavior** — any behavior whose effect isn't visible through the surface (periodic flushes, WAL writes, compaction, cache eviction) needs a `Stats()` or status endpoint. These serve production operators too; they are not test-only.
+- **Time handling** — if behavior depends on time (retries, expiries, scheduled work), an injectable clock is a component-design decision, not a test detail.
+- **Data access shape** — if an in-memory store will exist alongside the real database, the spec must say so and pick a parity-testing model (full suite against both, or a dedicated store-contract suite).
+
+`surface-testing` governs how tests are written; the spec records the decisions that make those tests possible.
 
 ## Level of detail
 
@@ -145,11 +153,12 @@ Only link what the reader is guaranteed to have access to — in-repo docs, comm
 
 ## At the end of the discussion
 
-1. Write the spec file (or produce the artifact in chat).
-2. List any soft flags with their count. If three or more, recommend a PRD revision pass.
-3. Review the running decision log. Offer to capture architecture-level decisions as ADRs. Decisions made here — storage choice, API patterns, auth approach, error handling strategy — are strong ADR candidates.
-4. Note that the spec is the primary input to `plan-from-context` or `plan-from-prompt` when the user is ready to plan implementation.
-5. Do not commit. The user handles commits.
+1. Run a testability pass against the `surface-testing` skill. Re-read the Component Design and API Design sections and confirm: every surface named is reachable from a test, every external dependency has a substitute tier chosen, every async behavior has an observable assertion path (downstream effect, fake capture, or exposed observability API), time-dependent behavior routes through an injectable clock, and any in-memory store has a parity-testing model. Gaps here are design findings, not testing findings — resolve them before writing the spec.
+2. Write the spec file (or produce the artifact in chat).
+3. List any soft flags with their count. If three or more, recommend a PRD revision pass.
+4. Review the running decision log. Offer to capture architecture-level decisions as ADRs. Decisions made here — storage choice, API patterns, auth approach, error handling strategy — are strong ADR candidates.
+5. Note that the spec is the primary input to `plan-from-context` or `plan-from-prompt` when the user is ready to plan implementation.
+6. Do not commit. The user handles commits.
 
 ## Revising an existing tech spec
 

@@ -54,11 +54,11 @@ Use these domains as the source when generating the initial question list. Not e
 - **Mental model.** For platform, framework, or tooling products: how should users think about the system? What are the core concepts and their relationships? Often more clarifying than user stories for this type of product.
 - **Core design principles.** The non-negotiable constraints that shape all decisions — what the product will always do, and what it will deliberately never do. Surface these early; they resolve many later questions.
 - **User stories or use cases.** What does the user want to do? "As a X, I want Y, so that Z" works, but any clear narrative does.
-- **Success metrics.** How do we know it worked? Quantitative where possible, leading indicators where not.
+- **Success metrics.** Measures of whether the *PRD was right* — outcomes observable after shipping, such as adoption, latency reduction, incidents avoided, task-completion-time reduction. Never a restatement of the scope list: "the capabilities were built" is execution, not a metric. If no plausible post-ship outcome exists to measure, omit the section rather than filling it. Many framework, tooling, and infrastructure MVPs have nothing to put here, and that is correct.
 - **Scope.** What is in the first version?
 - **Non-goals.** What this feature is deliberately not trying to do. Often more clarifying than scope.
 - **Dependencies and constraints.** External systems, timelines, regulatory or compliance requirements, known technical limits.
-- **Open questions.** Things that still need product-level resolution before tech-spec can begin.
+- **Open questions.** Things that still need *product-level* resolution before tech-spec can begin: scope boundaries, user scenarios in/out, outcome thresholds, unresolved dependencies. Do not include questions whose answers would live in an interface signature, a config key, an exit code, or a middleware shape — those are tech-spec open questions and belong there.
 
 ## Feature naming
 
