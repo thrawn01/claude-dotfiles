@@ -5,7 +5,6 @@ description: "Monitor and fix automated review comments (Copilot, SonarCloud) an
   Use when the user says 'babysit this PR', 'fix CI', 'handle the automated reviews',
   or 'get this PR green'."
 argument-hint: "[pr-number]"
-disable-model-invocation: true
 allowed-tools: [Bash, Read, Edit, Glob, Grep, Agent]
 ---
 
@@ -13,7 +12,7 @@ allowed-tools: [Bash, Read, Edit, Glob, Grep, Agent]
 
 You are an autonomous PR agent. Your goal is to get the current branch's PR into a human-reviewable state by fixing CI failures and addressing automated review comments (Copilot and SonarCloud). Do not stop until either the PR is fully green with no unresolved bot review threads, or you hit a problem requiring human input.
 
-## Phase 1 — Assess PR Status
+## Assess PR Status
 
 Run the status script to get a snapshot of CI checks and bot review threads:
 
@@ -27,28 +26,26 @@ The script accepts an optional PR number argument. If `$ARGUMENTS` is empty, it 
 
 Parse the JSON output and determine the current state:
 
-- **All checks passed + no unresolved bot threads** → Skip to Phase 6 (Final Check)
-- **Checks still pending** → Go to Phase 2 (Poll)
-- **Checks failed** → Go to Phase 3 (Fix CI)
-- **Checks passed but unresolved bot threads** → Go to Phase 4 (SonarCloud) or Phase 5 (Copilot)
+- **All checks passed + no unresolved bot threads** → Skip to Final Check
+- **Checks still pending/in-progress** → Start polling CI, but also immediately fix any Copilot or SonarCloud reviews that have already been posted — do not wait for CI to finish before addressing bot comments
+- **Checks failed** → Go to Fix CI Failures
+- **Checks passed but unresolved bot threads** → Go to Resolve SonarCloud / Resolve Copilot
 
-## Phase 2 — Poll Until Checks Complete
+## Poll CI
 
-Use the `/loop` skill (a built-in Claude Code skill that runs a prompt on a recurring interval) to poll for CI completion. Invoke it as `/loop 5m` with the polling logic below. On each iteration, run `pr-status.sh` and check:
+Use the `/loop` skill (a built-in Claude Code skill that runs a prompt on a recurring interval) to poll for CI completion. Invoke it as `/loop 1m` with the polling logic below. On each iteration, run `pr-status.sh` and check:
 
 - If checks are still pending, report which checks are running and wait for the next iteration.
-- If a check has failed, stop the loop and proceed to Phase 3.
-- If all checks have passed, stop the loop and proceed to Phase 4/5 for bot reviews.
+- If a check has failed, stop the loop and proceed to Fix CI Failures.
+- If all checks have passed, stop the loop and proceed to Resolve SonarCloud / Resolve Copilot (if any unresolved threads remain).
 
-**Important**: Do NOT act on Copilot or SonarCloud feedback until their analysis for the latest push has completed. Copilot and SonarCloud re-analyze after each push — acting on stale comments wastes effort.
+**Stale review detection**: After each push, record the UTC time. The `pr-status.sh` output includes `copilot.latest_review_at` — only act on Copilot reviews where this timestamp is newer than your last push time. Copilot and SonarCloud re-analyze after each push, so acting on stale comments from a previous push wastes effort. If the review is current (posted after the latest push), address it immediately — do not wait for CI to finish first.
 
-To detect stale Copilot reviews, record the UTC time of your most recent push. The `pr-status.sh` output includes `copilot.latest_review_at` — only act on reviews where this timestamp is newer than your push time.
-
-## Phase 3 — Fix CI Failures
+## Fix CI Failures
 
 For each failed check from the status output:
 
-### 3a. Fetch the logs
+### Fetch the logs
 
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/fetch-failed-logs.sh "<check-name>" "<check-link>"
@@ -56,7 +53,7 @@ ${CLAUDE_SKILL_DIR}/scripts/fetch-failed-logs.sh "<check-name>" "<check-link>"
 
 Fallback: `~/.claude/skills/babysit-pr/scripts/fetch-failed-logs.sh`
 
-### 3b. Triage: flaky vs stale branch vs real failure
+### Triage: flaky vs stale branch vs real failure
 
 Before attempting a fix, determine the failure type:
 
@@ -74,37 +71,39 @@ Before attempting a fix, determine the failure type:
        curl -s -X PUT -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
          "https://api.buildkite.com/v2/organizations/<org>/pipelines/<pipeline>/builds/<build>/jobs/$JOB_ID/retry"
        ```
-   - Return to Phase 2 to poll for the retry result.
+   - Return to Poll CI to wait for the retry result.
 
 2. **Stale branch**: If the failure seems unrelated to PR changes, check how far behind master the branch is:
    ```bash
    git fetch origin master && git rev-list --count HEAD..origin/master
    ```
-   If more than 50 commits behind, merge master:
+   If more than 50 commits behind, rebase on master:
    ```bash
-   git merge origin/master
+   git rebase origin/master
    ```
-   If the merge has conflicts, abort it (`git merge --abort`) and stop — report the conflicts to the user. Do not attempt to auto-resolve merge conflicts from a stale branch update.
-   If the merge succeeds cleanly, push and return to Phase 2 to poll the new build.
+   If the rebase has conflicts, abort it (`git rebase --abort`) and stop — report the conflicts to the user. Do not attempt to auto-resolve rebase conflicts from a stale branch update.
+   If the rebase succeeds cleanly, force-push with lease (`git push --force-with-lease`) and return to Poll CI. Note: this is the **only** case where force-push is permitted — never force-push in any other situation.
 
-3. **Real failure**: The failure is related to files changed in this PR. Proceed to 3c.
+3. **Real failure**: The failure is related to files changed in this PR. Proceed to fix it.
 
-### 3c. Fix the failure
+### Fix the failure
 
 - Analyze the log output to identify the root cause (failed assertion, compile error, lint violation, etc.)
 - Fix the code
 - **Always verify locally before pushing**: identify an appropriate local command to run based on the failure type and the project structure. Run it and confirm it passes.
 - If the same failure recurs after a fix attempt, stop and explain the blocker to the user rather than looping.
 
-### 3d. Commit and push
+### Commit and push
 
 1. Stage only the files you changed
 2. Commit with a clear message describing the fix (no Co-Authored-By, no Claude attribution)
 3. Push the branch
-4. Record the push time (UTC) — needed for stale review detection in Phase 2
-5. Return to Phase 2 to poll the new build
+4. Record the push time (UTC) — needed for stale review detection
+5. Return to Poll CI
 
-## Phase 4 — Resolve SonarCloud Issues
+## Resolve SonarCloud Issues
+
+Handle SonarCloud before Copilot — Sonar fixes often require code changes that Copilot would then re-review.
 
 SonarCloud feedback appears in two places. Fetch both:
 
@@ -136,61 +135,61 @@ For each issue:
 - **Code smell / bug / vulnerability** → Fix the flagged code directly.
 - **Cannot resolve** → Flag to user and continue with other issues.
 
-SonarCloud does not use GitHub review threads — fixing the code and pushing is what clears the issues. After fixes, return to Phase 3d (commit/push) then Phase 2 (poll).
+SonarCloud does not use GitHub review threads — fixing the code and pushing is what clears the issues. After fixes, commit and push, then return to Poll CI.
 
-**Handle SonarCloud before Copilot** — Sonar fixes often require code changes that Copilot would then re-review.
-
-## Phase 5 — Resolve Copilot Review Comments
+## Resolve Copilot Review Comments
 
 The `pr-status.sh` output includes unresolved Copilot threads with their thread IDs, file paths, line numbers, and comment bodies.
 
-For each unresolved thread:
+Categorize each thread:
 
-- **If you can address it**: Make the code change, then resolve the thread:
+- **Fix** — real bug, security issue, missing error handling, valid rename/cleanup: make the code change.
+- **Stale** — comment about code that no longer exists or was already fixed: no code change needed.
+- **Disagree** — design decision, architectural trade-off, or subjective preference where the current approach is intentional: post a reply explaining the rationale (REST), do NOT resolve the thread, and leave it open for human reviewers:
   ```bash
-  gh api graphql -f query='
-  mutation {
-    resolveReviewThread(input: {threadId: "<thread-id>"}) {
-      thread { isResolved }
-    }
-  }'
+  gh api repos/<owner>/<repo>/pulls/<pr>/comments/<comment-id>/replies -X POST \
+    -f body="<explanation>"
   ```
+- **Cannot determine fix**: leave the thread unresolved and note it for the final report.
 
-- **If you disagree or it's not actionable**: Post a brief reply explaining why, then resolve the thread:
-  ```bash
-  gh api graphql -f query='
-  mutation {
-    addPullRequestReviewThreadReply(input: {threadId: "<thread-id>", body: "<explanation>"}) {
-      comment { id }
-    }
-  }'
-  ```
-  Then resolve it with the mutation above.
+After triaging, commit and push all code changes (Fix threads). Before resolving threads via GraphQL, check `graphql_rate_limit.remaining` from the last `pr-status.sh` output — if < 50, warn the user and pause until `graphql_rate_limit.reset_at`. Then resolve all Fix and Stale threads:
+```bash
+gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<thread-id>"}) { thread { isResolved } } }'
+```
 
-- **If you genuinely cannot determine the right fix**: Leave it unresolved and flag it to the user at the end.
+**If any code changes were pushed**, re-request Copilot review so it can verify the fixes:
+```bash
+gh api repos/<owner>/<repo>/pulls/<pr>/requested_reviewers -X POST \
+  --input - <<'EOF'
+{"reviewers":["copilot-pull-request-reviewer[bot]"]}
+EOF
+```
+Then use the existing `/loop 1m` poll (same as CI polling) to wait for a new review — check `copilot.latest_review_at` against the push time. Once a new review lands, return to the top of the main loop (re-run `pr-status.sh` and re-assess everything).
 
-After addressing Copilot comments, return to Phase 3d (commit/push) then Phase 2 (poll).
+**If no code changes were pushed** (all remaining threads were Disagree/Cannot-determine), skip re-requesting Copilot and proceed to Final Check.
 
-## Phase 6 — Final Check
+## Final Check
 
-Once all checks are green, SonarCloud quality gate passes, and all Copilot threads are resolved:
+Proceed here once: CI checks are all green, SonarCloud quality gate passes, and no Copilot threads remain (or only Disagree/Cannot-determine threads remain with nothing left to push).
 
-1. Run `pr-status.sh` one final time to confirm everything is clean.
+1. Run `pr-status.sh` one final time to confirm the state.
 2. Report a summary to the user:
    - What was fixed across all iterations
    - What was committed and pushed
-   - Any issues left unresolved and why
-   - Confirmation that the PR is ready for human review
+   - Any Disagree threads left open, what reply was posted, and why
+   - Any Cannot-determine threads left unresolved
+   - Confirmation that the PR is ready for human review (or what still needs attention)
 
 ## Rules
 
-- Never stop between phases to ask for confirmation unless you are truly blocked.
+- Never stop between sections to ask for confirmation unless you are truly blocked.
 - Never push without verifying the fix locally first.
 - Never commit unrelated changes.
-- Never force-push.
+- Never force-push, except after a stale-branch rebase (use `--force-with-lease`).
+- Never merge master — always rebase.
 - If the same CI failure recurs after two fix attempts, stop and explain rather than looping.
 - If a check is still in-progress, keep polling — do not give up early.
-- Do not act on Copilot or SonarCloud feedback until their analysis for the latest push has completed.
+- Do not act on stale Copilot or SonarCloud feedback from a previous push — but DO act on current reviews immediately, even if CI is still running.
 - Handle SonarCloud issues before Copilot comments.
 - Do NOT include "Co-Authored-By" or Claude attribution in commits.
 - Clean up any downloaded build logs or temp files when done.

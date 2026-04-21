@@ -42,9 +42,10 @@ trap 'rm -f "$CHECKS_FILE" "$COPILOT_FILE" "$SONAR_COMMENTS_FILE" "$SONAR_CHECKS
 (gh pr checks "$PR_NUMBER" --json name,state,link,bucket,startedAt,completedAt \
   2>/dev/null || echo '[]') > "$CHECKS_FILE" &
 
-# Unresolved Copilot review threads via GraphQL (includes submitted_at for stale detection)
+# Unresolved Copilot review threads via GraphQL (includes submitted_at for stale detection and rateLimit)
 (gh api graphql -f query="
 {
+  rateLimit { remaining resetAt }
   repository(owner: \"$OWNER\", name: \"$REPO\") {
     pullRequest(number: $PR_NUMBER) {
       reviews(last: 10) {
@@ -67,15 +68,19 @@ trap 'rm -f "$CHECKS_FILE" "$COPILOT_FILE" "$SONAR_COMMENTS_FILE" "$SONAR_CHECKS
 }" 2>/dev/null | jq '{
   threads: [.data.repository.pullRequest.reviewThreads.nodes[]
     | select(.isResolved == false)
-    | select(.comments.nodes[0].author.login == "copilot-pull-request-reviewer[bot]")
+    | select(.comments.nodes[0].author.login == "copilot-pull-request-reviewer")
   ],
   latest_review_at: (
     [.data.repository.pullRequest.reviews.nodes[]
-     | select(.author.login == "copilot-pull-request-reviewer[bot]")
+     | select(.author.login == "copilot-pull-request-reviewer")
      | .submittedAt
     ] | sort | last // null
-  )
-}' || echo '{"threads": [], "latest_review_at": null}') > "$COPILOT_FILE" &
+  ),
+  graphql_rate_limit: {
+    remaining: .data.rateLimit.remaining,
+    reset_at: .data.rateLimit.resetAt
+  }
+}' || echo '{"threads": [], "latest_review_at": null, "graphql_rate_limit": {"remaining": null, "reset_at": null}}') > "$COPILOT_FILE" &
 
 # SonarCloud PR-level comment (quality gate result)
 (gh api "repos/$OWNER/$REPO/issues/$PR_NUMBER/comments" \
@@ -101,17 +106,18 @@ read_json_or_default() {
 }
 
 CHECKS=$(read_json_or_default "$CHECKS_FILE" '[]')
-COPILOT_DATA=$(read_json_or_default "$COPILOT_FILE" '{"threads": [], "latest_review_at": null}')
+COPILOT_DATA=$(read_json_or_default "$COPILOT_FILE" '{"threads": [], "latest_review_at": null, "graphql_rate_limit": {"remaining": null, "reset_at": null}}')
 SONAR_COMMENTS=$(read_json_or_default "$SONAR_COMMENTS_FILE" '[]')
 SONAR_CHECKS=$(read_json_or_default "$SONAR_CHECKS_FILE" '{"sonar": []}')
 
 # Extract copilot fields
 COPILOT_THREADS=$(echo "$COPILOT_DATA" | jq '.threads')
 COPILOT_REVIEW_AT=$(echo "$COPILOT_DATA" | jq -r '.latest_review_at // empty')
+GRAPHQL_RATE_LIMIT=$(echo "$COPILOT_DATA" | jq '.graphql_rate_limit')
 
 # Summarize check states
 FAILED=$(echo "$CHECKS" | jq '[.[] | select(.state == "FAILURE" or .state == "ERROR")] | length')
-PENDING=$(echo "$CHECKS" | jq '[.[] | select(.state == "PENDING" or .state == "QUEUED")] | length')
+PENDING=$(echo "$CHECKS" | jq '[.[] | select(.state == "PENDING" or .state == "QUEUED" or .state == "IN_PROGRESS")] | length')
 PASSED=$(echo "$CHECKS" | jq '[.[] | select(.state == "SUCCESS")] | length')
 TOTAL=$(echo "$CHECKS" | jq 'length')
 
@@ -130,6 +136,7 @@ jq -n \
   --argjson copilot_threads "$COPILOT_THREADS" \
   --argjson sonar_comments "$SONAR_COMMENTS" \
   --argjson sonar_checks "$SONAR_CHECKS" \
+  --argjson graphql_rate_limit "$GRAPHQL_RATE_LIMIT" \
   '{
     pr_number: ($pr | tonumber),
     branch: $branch,
@@ -139,7 +146,7 @@ jq -n \
     checks: {
       summary: { total: $total, passed: $passed, failed: $failed, pending: $pending },
       failed_checks: [($checks // [])[] | select(.state == "FAILURE" or .state == "ERROR") | {name, state, link}],
-      pending_checks: [($checks // [])[] | select(.state == "PENDING" or .state == "QUEUED") | {name, state}],
+      pending_checks: [($checks // [])[] | select(.state == "PENDING" or .state == "QUEUED" or .state == "IN_PROGRESS") | {name, state}],
       all_checks: ($checks // [])
     },
     copilot: {
@@ -150,5 +157,6 @@ jq -n \
     sonar: {
       checks: $sonar_checks,
       comments: $sonar_comments
-    }
+    },
+    graphql_rate_limit: $graphql_rate_limit
   }'
