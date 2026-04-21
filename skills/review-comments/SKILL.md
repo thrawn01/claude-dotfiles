@@ -1,3 +1,7 @@
+---
+name: review-comments
+description: Address // REVIEW annotations left in source files. Use when the user says 'fix review comments', 'address review comments', or when a file contains // REVIEW markers.
+---
 # Review Comments
 
 You are tasked with reading a file provided and addressing any `// REVIEW` comments in the file
