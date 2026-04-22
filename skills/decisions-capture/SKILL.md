@@ -1,11 +1,12 @@
 ---
-name: checkpoint
+name: decisions-capture
 description: Capture decisions, rationale, and context from the current conversation into a referenceable document
 ---
 
-You are tasked with checkpointing the current conversation. Your job is to
-extract all context, decisions, rationale, and concrete examples into a clear,
-referenceable document that fully captures what was discussed and decided.
+You are tasked with capturing the decisions from the current conversation. Your
+job is to extract all context, decisions, rationale, and concrete examples into
+a clear, referenceable document that fully captures what was discussed and
+decided.
 
 ## Step 1: Extract Everything from the Conversation
 
@@ -27,15 +28,15 @@ output.
 Check if a `plans/` directory exists in the project root. If it does, write the
 document there. If it does not, write to the project root.
 
-The filename MUST follow the convention: `checkpoint-<topic>.md` where `<topic>`
+The filename MUST follow the convention: `decisions-<topic>.md` where `<topic>`
 is a short, hyphenated description of the subject (e.g.,
-`checkpoint-streaming.md`, `checkpoint-auth-middleware.md`,
-`checkpoint-batch-processing.md`).
+`decisions-streaming.md`, `decisions-auth-middleware.md`,
+`decisions-batch-processing.md`).
 
-## Step 3: Write the Checkpoint Document
+## Step 3: Write the Decisions Document
 
 ```markdown
-# Checkpoint: [Subject]
+# Decisions: [Subject]
 
 This document captures the decisions and context from our discussion on [subject].
 These decisions represent the agreed-upon approach.
@@ -94,7 +95,7 @@ After writing the file, tell the user:
 
 ## Boundaries
 
-- DO NOT create an implementation plan. This is a conversation checkpoint.
+- DO NOT create an implementation plan. This is a decisions capture.
 - DO NOT add sections for timeline, milestones, or phases.
 - DO NOT invent decisions that weren't made in the conversation. If something
   was discussed but not resolved, list it under the "Open Questions" section.
