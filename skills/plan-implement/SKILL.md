@@ -1,13 +1,8 @@
 ---
-<<<<<<<< HEAD:commands/plan-implement.md
 name: plan-implement
 description: Implement all phases of a technical plan sequentially using subagents
-========
-name: implement-plan
-description: Implement all phases of a technical plan sequentially using subagents. Use when user wants to execute/implement a plan file or asks to implement phases.
 argument-hint: "[plan-file-path]"
 allowed-tools: Read, Edit, Glob, Grep, Bash, Agent, TaskCreate, TaskUpdate, TaskList
->>>>>>>> 01e1cec (Converted some commands to skills):skills/implement-plan/SKILL.md
 ---
 
 # Implement All Phases of a Plan
@@ -18,7 +13,6 @@ The plan file path is: `$ARGUMENTS`
 
 ## Initial Response
 
-<<<<<<<< HEAD:commands/plan-implement.md
 When this command is invoked:
 
 1. **Check if parameters were provided**:
@@ -28,10 +22,6 @@ When this command is invoked:
    - Begin the orchestration process
 
 2. **If no parameters provided**, respond with:
-========
-- If `$ARGUMENTS` is provided, immediately read the plan file FULLY and begin the orchestration process.
-- If `$ARGUMENTS` is empty, respond with:
->>>>>>>> 01e1cec (Converted some commands to skills):skills/implement-plan/SKILL.md
 ```
 I'll help you implement all phases of a plan sequentially. Please provide the name of the file which
 contains the implementation plan details and I'll coordinate the phased implementation.

@@ -14,10 +14,10 @@
       "Bash:rm"
     ]
   },
+  "model": "haiku",
   "enabledPlugins": {
     "gopls-lsp@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
-  "model": "opus[1m]"
+  "effortLevel": "high"
 }
