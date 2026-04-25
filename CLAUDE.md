@@ -49,9 +49,9 @@ The following testing patterns apply to Go projects.
 
 ## Surface Testing Philosophy
 
-**ALWAYS test the public interface.** Tests should interact with the system as end-users would, never calling internal/private functions directly.
+**ALWAYS test the public interface.** Use the `surface-testing` skill for detailed examples and patterns.
 
-### Core Principles
+Tests should interact with the system as end-users would, never calling internal/private functions directly.
 
 - **Public Interface Only**: HTTP APIs test via requests, libraries via exported functions, CLIs via command execution
 - **Testable Code Structure**: Design code to be testable from the start
@@ -62,30 +62,6 @@ The following testing patterns apply to Go projects.
   - Not important? → Remove it (dead code)
   - Important? → Expose observability (Stats() API, metrics, debug endpoints)
 - **Tests verify behavior**: Poll stats/metrics with `require.Eventually()` to verify internal behavior
-
-### Examples
-
-```go
-// CLI: Testable Run() function
-func main() {
-    os.Exit(cmd.Run(context.Background(), os.Argv[1:], cmd.RunOptions{
-        Stdout: os.Stdout,
-    }))
-}
-
-// Test calls Run() with test args
-exitCode := cmd.Run([]string{"sub-cmd", "-f", "file"}, cmd.RunOptions{
-    Stdout: &stdout,
-})
-
-// Database: Expose Stats() for testing internal behavior
-stats := db.Stats()
-require.Eventually(t, func() bool {
-    return db.Stats().WALWriteCount > 0
-}, time.Second, 10*time.Millisecond)
-```
-
-**See `surface-testing` skill for detailed examples and patterns.**
 
 ## Code Guidelines (Go)
 
