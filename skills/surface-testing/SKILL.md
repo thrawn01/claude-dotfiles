@@ -29,6 +29,7 @@ Before writing tests, identify the public interface:
 - **HTTP/gRPC API**: the endpoints. Boot the full application and make real HTTP requests. Do not instantiate controllers, handlers, or services directly.
 - **CLI**: the `Run()` function. Call it with arguments and capture output. Do not call subcommand handlers or internal functions directly.
 - **Library**: the exported/public functions. Call them the way a consumer would. Do not call unexported/private functions.
+- **Internal Library Boundary**: a package within the codebase that exposes a complete, self-contained API — structurally identifiable by whether it could be extracted and published independently without changing its interface. In all contexts — design, implementation, and review — recognize or introduce these boundaries at domain edges and test each through its own exported interface only. Consumers use the real package; there is nothing to substitute unless the package itself wraps an external dependency.
 
 This applies especially to libraries with complex internals — parsers are the classic case, where it's tempting to test the tokenizer or state machine directly. Don't.
 
@@ -532,7 +533,7 @@ If your service needs any of these, the in-memory store pays for itself beyond t
 
 ### Go
 
-**Tests MUST be in `package xxx_test`** — because this prevents the test from accessing unexported identifiers, which forces it to enter through the public interface. If your test won't compile in `package xxx_test`, that's the signal you're trying to test internals.
+**Tests MUST be in `package xxx_test`** — because this prevents the test from accessing unexported identifiers, which forces it to enter through the public interface. If your test won't compile in `package xxx_test`, that's the signal you're trying to test internals. This applies equally to internal library boundaries — packages within the same codebase that expose a complete domain API are tested as libraries, from `package xxx_test`, never from inside.
 
 ### Kotlin/Micronaut
 
@@ -548,9 +549,11 @@ They overlap but differ in intent. **Integration testing** asks "do these compon
 
 Surface tests boot the full application, so internal components are integrating — but integration is a side effect, not the goal. Surface tests also explicitly fake external boundaries to stay fast, deterministic, and focused on *this* system's behavior; integration tests typically wire real things together. Complementary, not interchangeable.
 
+**Internal library boundaries** sit at the intersection of both: a domain-complete package within the codebase defines its own surface and warrants its own surface tests, independent of the systems that consume it. When integration tests wire two components together, an internal library boundary is where you draw the line — it is a first-class surface, not an internal seam to cut through.
+
 ## Key Principles
 
-1. **Test behavior through the surface**: Tests act as end-users and verify what the system does, not how. If a test needs internal access, the design is wrong — fix the design (expose observability), not the test strategy. Only behavior changes should break tests.
+1. **Test behavior through the surface** (including internal library boundaries, which define their own surface): Tests act as end-users and verify what the system does, not how. If a test needs internal access, the design is wrong — fix the design (expose observability), not the test strategy. Only behavior changes should break tests.
 2. **Preserve the production stack**: A test's value is proportional to how much of the production code path it exercises — real TCP, real HTTP clients, real serialization, real migrations. Fidelity is the metric, not speed.
 3. **Real fakes at external boundaries only**: Substitute externals with real fakes (in-process libraries or testcontainers) that exercise the real protocol. Hand-written fakes are a last resort. Never substitute internal components.
 4. **Real database by default**: Use the real database with real migrations. An in-memory store is a deliberate, parity-tested opt-out — not a shortcut.
