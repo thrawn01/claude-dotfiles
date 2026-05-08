@@ -123,19 +123,10 @@ Need guidance on: [What you're stuck on]
 - Don't include Co-Authored-By or emoji in messages
 - Don't make major plan deviations without approval
 - Don't create documentation/README files unless the plan explicitly requires them
-- Don't create temporary test programs or scripts (write functional tests instead)
+- Don't create temporary test programs or scripts (write surface tests instead)
 - Don't leave build artifacts in the repository (delete any you accidentally create)
 
-## Functional Testing Philosophy
-
-ALWAYS test through public interfaces:
-- CLIs: Test via `Run(ctx, args, opts)` execution
-- HTTP APIs: Test via HTTP requests
-- Libraries: Test via exported functions
-- NEVER test internal/private functions directly
-
-If code can't be tested via public interface:
-- Not important? Remove it (dead code)
-- Important? Expose observability (Stats() API, metrics, debug endpoints)
+## Surface Testing Philosophy
+Use the surface-testing skill to understand this philosophy
 
 Remember: You're implementing ONE phase. Do it completely, verify it works, report results. The orchestrator handles sequencing and commits.

@@ -47,7 +47,8 @@ The phase-implementer subagent has built-in knowledge of:
 - When to stop and ask for guidance
 - NOT to commit (you handle commits)
 - NOT to include Co-Authored or emoji in any messages
-- NOT to create temporary test programs (write functional tests instead)
+- NOT to create temporary test programs (write surface tests instead - See
+  surface-testing skill)
 - NOT to leave build artifacts in the repository
 
 ## Resuming Work

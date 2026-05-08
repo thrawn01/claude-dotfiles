@@ -6,9 +6,9 @@ description: Reviews a plan to ensure the plan follows plan guidelines
 
 # Implementation Plan Review
 
-Use this checklist when creating or reviewing implementation plans to ensure compliance with functional testing and coding guidelines.
+Use this checklist when creating or reviewing implementation plans to ensure compliance with surface testing and coding guidelines.
 
-## Functional Testing Compliance
+## Surface Testing Compliance
 
 ### Public Interface Testing
 - [ ] All tests interact through public API (exported functions only)
@@ -89,7 +89,7 @@ The following checklist items apply to Go projects. For non-Go projects, verify 
 
 ## Red Flags (Plan Violations)
 
-Watch for these patterns that indicate functional testing violations:
+Watch for these patterns that indicate surface testing violations:
 
 ### ❌ Testing Internal Functions
 - Test names like `TestBuildIR`, `TestExtractParameter`, `TestRenderTable`
@@ -172,5 +172,5 @@ func TestRenderMarkdown(t *testing.T) {
 
 ## Resources
 
-- **Functional Testing Skill**: See `functional-testing` skill for detailed examples
+- **Surface Testing Skill**: See `surface-testing` skill for detailed examples
 - **CLAUDE.md**: See `~/.claude/CLAUDE.md` for testing patterns and code guidelines
