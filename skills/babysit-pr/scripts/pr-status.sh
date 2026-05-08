@@ -43,12 +43,12 @@ trap 'rm -f "$CHECKS_FILE" "$COPILOT_FILE" "$SONAR_COMMENTS_FILE" "$SONAR_CHECKS
   2>/dev/null || echo '[]') > "$CHECKS_FILE" &
 
 # Unresolved Copilot review threads via GraphQL (includes submitted_at for stale detection and rateLimit)
-(gh api graphql -f query="
+(GRAPHQL_RESPONSE=$(gh api graphql -f query="
 {
   rateLimit { remaining resetAt }
   repository(owner: \"$OWNER\", name: \"$REPO\") {
     pullRequest(number: $PR_NUMBER) {
-      reviews(last: 10) {
+      reviews(last: 50) {
         nodes {
           author { login }
           submittedAt
@@ -65,7 +65,7 @@ trap 'rm -f "$CHECKS_FILE" "$COPILOT_FILE" "$SONAR_COMMENTS_FILE" "$SONAR_CHECKS
       }
     }
   }
-}" 2>/dev/null | jq '{
+}") && echo "$GRAPHQL_RESPONSE" | jq 'if .errors then error("GraphQL errors: \(.errors | tostring)") else . end' | jq '{
   threads: [.data.repository.pullRequest.reviewThreads.nodes[]
     | select(.isResolved == false)
     | select(.comments.nodes[0].author.login == "copilot-pull-request-reviewer")
