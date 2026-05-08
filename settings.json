@@ -15,7 +15,8 @@
       "Task",
       "BashOutput",
       "WebFetch",
-      "WebSearch"
+      "WebSearch",
+      "Skill"
     ],
     "deny": [
       "Bash:rm"
