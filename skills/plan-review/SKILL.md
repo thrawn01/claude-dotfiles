@@ -17,7 +17,7 @@ Use this checklist when creating or reviewing implementation plans to ensure com
 - [ ] Tests can be written and pass before internal implementation exists
 
 ### Test Structure
-- [ ] Test names follow pattern: `TestPublicFunction_Feature`
+- [ ] Test names in camelCase starting with capital letter (e.g., `TestConvertMinimalMarkdown`)
 - [ ] All tests use table-driven approach where appropriate
 - [ ] Tests use `require` for critical assertions, `assert` for non-critical
 - [ ] No descriptive messages in assertions (use comments instead)
