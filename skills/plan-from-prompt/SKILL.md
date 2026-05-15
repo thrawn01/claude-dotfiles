@@ -82,6 +82,8 @@ Read all mentioned files immediately and FULLY using the Read tool WITHOUT limit
 - DO NOT spawn sub-tasks before reading these files yourself in the main context
 - NEVER read files partially - if a file is mentioned, read it completely
 
+Also read any `docs/CONTEXT.md` files relevant to the feature area. These are the project's domain glossaries — use them throughout planning to ensure consistent terminology in component names, data model terms, and API naming.
+
 #### 1c. Spawn Parallel Research Tasks
 
 **Model Selection:**

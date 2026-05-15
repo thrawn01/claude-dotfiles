@@ -82,7 +82,7 @@ Use TaskUpdate to mark each task as in_progress when working on it and completed
 
 #### 1b. Read All Spec Documents (FIRST PRIORITY)
 
-Read every provided spec and PRD file immediately and FULLY using the Read tool WITHOUT limit/offset parameters. Do this before spawning any research tasks. Build a complete picture of:
+Read every provided spec and PRD file immediately and FULLY using the Read tool WITHOUT limit/offset parameters. Also read any `docs/CONTEXT.md` files relevant to the feature area — these are the project's domain glossaries; use them throughout planning to ensure consistent terminology in component names, data model terms, and API naming. Do this before spawning any research tasks. Build a complete picture of:
 - All stated requirements and acceptance criteria
 - Decisions already made (treat these as final)
 - Technical constraints or approaches the spec prescribes

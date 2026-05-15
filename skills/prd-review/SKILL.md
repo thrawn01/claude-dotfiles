@@ -21,6 +21,8 @@ If Read, Write, and Edit tools are available in your toolset, you are in Claude 
 
 ## Review perspective
 
+Look for `CONTEXT.md` files in `docs/` directories relevant to the feature being reviewed (see the CONTEXT-FORMAT.md in the prd-create skill for location rules). Read any that exist once and hold them in memory for the session. Use them to catch terminology conflicts — if the PRD uses a term differently than the glossary, or introduces a new domain term without defining it, that is a finding.
+
 Read the PRD as an engineer who is about to write the tech spec. For each section, ask: do I have enough information to make technical decisions here, or will I have to go back to the product? Gaps and ambiguities that would force a tech-spec question are the highest-priority findings.
 
 Also list every file in `docs/adr/` and read each title. For any title that sounds like it could cap product scope — users, tenancy, regions, languages, roles, pricing, deployment targets — read the full ADR. Skip titles that are clearly purely technical (storage engines, serialization formats, library choices). A PRD requesting something a scope-capping ADR has ruled out is a finding that needs either a PRD adjustment or a superseding ADR.
@@ -68,5 +70,12 @@ Write for a reader who was not in the review discussion. No deictic references, 
 ## At the end of the review
 
 1. Confirm the updated file was written with its path.
-2. Review the running decision log. Offer to capture architecture-level decisions as ADRs via `adr-write`.
-3. Do not commit. The user handles commits.
+2. If the review resolved or corrected any domain terms, write them to the appropriate `docs/CONTEXT.md` in a single pass alongside the PRD update. If the file does not exist, create it in the `docs/` directory closest to the code whose domain it describes.
+3. Review the running decision log. For each decision — product or technical — apply this checklist. Only offer an ADR if all three are true:
+   - **Hard to reverse** — the cost of changing your mind later is meaningful
+   - **Surprising without context** — a future reader will wonder "why did they do it this way?"
+   - **Result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
+
+   If any is missing, skip the ADR; the decision already lives in the PRD.
+4. For each decision that passes the checklist, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
+5. Do not commit. The user handles commits.

@@ -21,6 +21,8 @@ If Read, Write, and Edit tools are available in your toolset, you are in Claude 
 
 ## Discussion process
 
+Look for `CONTEXT.md` files in `docs/` directories relevant to the feature being discussed (see [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md) for location rules). Read any that exist once and hold them in memory for the session — do not re-read. These are the project's domain glossaries; use them throughout to catch terminology conflicts.
+
 Before generating the question list, list every file in `docs/adr/` and read each title (the top-level heading). For any title that sounds like it could cap product scope — e.g., mentions users, tenancy, regions, languages, roles, pricing, deployment targets — read the full ADR. Skip titles that are clearly purely technical (storage engines, serialization formats, library choices). The goal is to catch architectural guardrails that limit what the product can ask for — things like "no multi-tenancy," "English-only MVP." Frame questions so they don't invite answers the architecture has already ruled out; if the user seems to want something an ADR forbids, surface the ADR explicitly rather than silently narrowing the question.
 
 At the start of the discussion, generate the full list of questions needed to produce a good PRD for this feature, present it to the user, then immediately start on the first question. Do not pause to ask whether to reorder, skip, or add questions — the user can redirect at any point as items come up, but the default is forward motion. Showing the list gives shape; asking permission to proceed just adds friction.
@@ -40,8 +42,12 @@ Then work through the questions one at a time. For each question:
 
     Numbered options let the user respond "go with 2" without re-typing. A bare list of options without a pick is never acceptable — the user came to you for a recommendation.
 - Resolve the question before moving to the next one. Stay on it until it is answered or the user explicitly defers it.
+- When the user uses a vague or overloaded term, interrupt mid-question before continuing. Propose a precise alternative: "You said 'user' — do you mean the account owner or anyone with access?" Resolve the term before moving on.
+- When a scope boundary or non-goal is stated, always follow up with one concrete scenario that tests it: "So if a customer cancels mid-billing-cycle, that's out of scope?" One scenario per boundary, framed as confirmation not challenge.
 
 Keep a visible running list of decisions as they land. Show it on request, and whenever you finish a domain (problem → users → scope, etc.) before moving to the next. The user should be able to correct the log in real time.
+
+Track resolved domain terms during the discussion. When writing the PRD at the end, also write all new or updated terms to the appropriate `docs/CONTEXT.md` in a single pass. If it does not exist, create it in the `docs/` directory closest to the code whose domain it describes. Use the format in [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md).
 
 When the question list is exhausted, or the user calls it done, move to writing.
 
@@ -110,8 +116,13 @@ Do not link to other features' PRDs or tech-specs, chat transcripts, Slack threa
 ## At the end of the discussion
 
 1. Confirm the file was written with its path.
-2. Review the running decision log. Separate architecture-level decisions (cross-cutting, non-obvious, long-term consequences) from scope or process decisions that already live in the PRD. Core design principles surfaced during the discussion are strong ADR candidates — they are often the most significant decisions made and the easiest to lose.
-3. For each architecture-level decision, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
+2. Review the running decision log. For each decision — product or technical — apply this checklist. Only offer an ADR if all three are true:
+   - **Hard to reverse** — the cost of changing your mind later is meaningful
+   - **Surprising without context** — a future reader will wonder "why did they do it this way?"
+   - **Result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
+
+   If any is missing, skip the ADR; the decision already lives in the PRD. Core design principles surfaced during the discussion are strong ADR candidates — they are often the most significant decisions made and the easiest to lose.
+3. For each decision that passes the checklist, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
 4. Do not commit. The user handles commits.
 
 ## Revising an existing PRD
