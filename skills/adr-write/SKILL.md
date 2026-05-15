@@ -11,19 +11,26 @@ The skill supports three operations, and more than one can happen in a single in
 
 If the request is ambiguous, ask before proceeding: which decision to record if several candidates surfaced in a long discussion, or whether a change to an existing ADR is a minor edit versus a supersession. Do not guess.
 
+## Conciseness and decision focus
+
+ADRs record *decisions*, not designs. Every sentence earns its place or gets cut.
+
+- **State the decision and the forces behind it. Stop.** Implementation details, API shapes, data models, and component interactions belong in code and tech specs, not here.
+- **One idea per sentence.** No filler, hedging, or throat-clearing.
+- **No restatement.** The decision appears once, in the Decision section. Context sets up the problem; Consequences describe effects. Neither repeats the decision in different words.
+- **Bullets over prose** when listing forces, alternatives, or consequences.
+
 ## Write for a reader who was not in the conversation
 
 The ADR must stand alone. The only context a future reader has is the codebase and the other ADRs in `docs/adr/`. They will not have the discussion that produced this decision, and they will read it months or years later.
 
 Concretely, this means:
 
-- **No references to abandoned ideas that never existed in the code.** If the conversation considered and rejected `FeatureX`, and `FeatureX` was never built, do not mention it by name. "We considered a queue-based approach and rejected it because..." is fine; "We will not use FeatureX" is not, because the reader has no idea what FeatureX was.
-- **No pronouns or deictic references that only resolve in-conversation.** "The approach we discussed earlier," "the option Alice preferred," "the thing from the meeting" — all cut. Name the actual technical choice.
-- **No appeals to conversational authority.** "Per the discussion on Tuesday" or "as agreed in chat" tell the reader nothing. State the reasoning itself.
-- **Alternatives get named only if they are real and comprehensible.** "Considered PostgreSQL and DynamoDB; chose PostgreSQL because..." works — both are recognizable technologies. "Considered the approach from the prototype" does not work unless the prototype still exists and is referenced somewhere discoverable.
-- **Consequences are about the system, not the team's process.** "This locks us into relational modeling" is a consequence. "This means we do not need to revisit the discussion" is not.
+- **No conversation artifacts.** Don't reference abandoned ideas by name, in-conversation pronouns ("the approach we discussed"), or conversational authority ("as agreed in chat"). Name real technologies and state reasoning directly.
+- **Alternatives must be recognizable.** "Considered PostgreSQL and DynamoDB" works. "Considered the prototype approach" does not — unless the prototype exists in the repo.
+- **Consequences describe system effects, not process.** "Locks us into relational modeling" is a consequence. "No need to revisit this discussion" is not.
 
-A useful test before writing: if you stripped every proper noun introduced only in the conversation, would the ADR still make sense? If not, rewrite until it does.
+Test: strip every proper noun introduced only in conversation. Does the ADR still make sense? If not, rewrite.
 
 ## Numbering
 
@@ -53,60 +60,77 @@ Accepted
 
 ## Context
 
-[What is the issue that we're seeing that is motivating this decision or change? Describe the forces at play, including technological, political, social, and project-local. These forces are probably in tension, and should be called out as such. The language in this section is value-neutral. It is simply describing facts.]
+[Forces motivating this decision. Factual, value-neutral. Call out tensions.]
 
 ## Decision
 
-[What is the change that we're actually proposing or doing? Stated in full sentences, active voice: "We will..."]
+[What we are doing. Active voice: "We will..." Be specific.]
 
 ## Consequences
 
-[What becomes easier or more difficult to do and any risks introduced by the change that will need to be mitigated. Include both positive and negative consequences. Be honest about tradeoffs.]
+[What becomes easier, harder, or riskier. Both positive and negative.]
 ```
 
 Notes on the template:
 
-- `N` in the heading is the decimal number matching the filename prefix (no leading zeros in the heading itself: `# 7. Use PostgreSQL for primary storage`, not `# 0007. ...`).
-- `Date` is today's date in ISO format. When editing an existing ADR, do not change the Date — it records when the decision was made, not when the file was last touched.
-- `Status` defaults to `Accepted`. Other valid values: `Proposed`, `Deprecated`, `Superseded by ADR-NNNN`. Only use something other than `Accepted` if the user asks.
-- **Decision** is stated in active voice, "We will...", declarative and specific enough that a reader knows what was chosen.
-- **Context** describes the forces, constraints, and tradeoffs. If alternatives were considered and rejected, name them here (subject to the rules in "Write for a reader who was not in the conversation").
-- **Consequences** covers follow-on effects, positive and negative. Honest about tradeoffs, not a sales pitch.
-- If a section would be thin because the source material is thin, ask the user rather than pad.
-- Do not add sections beyond these four. ADRs are deliberately minimal; extra sections dilute them.
+- `N` in the heading is the decimal number (no leading zeros: `# 7. Use PostgreSQL...`, not `# 0007. ...`).
+- `Date` is today's ISO date. When editing, do not change the Date.
+- `Status` defaults to `Accepted`. Other valid values: `Proposed`, `Deprecated`, `Superseded by ADR-NNNN`. Only deviate if the user asks.
+- **Context** states forces and tensions. Name rejected alternatives only if they are recognizable technologies. Do not restate the decision.
+- **Decision** is active voice ("We will..."), specific, stated exactly once. Single source of truth for what was chosen.
+- **Consequences** lists effects — positive and negative. No sales pitch, no restatement of the decision.
+- Thin source material → ask the user rather than pad.
+- Do not add sections beyond these four (no "See Also", "References", "Notes", etc.). ADRs are minimal by design.
 
 ## Linking
 
-Links are allowed only to artifacts the reader is guaranteed to have: other ADRs in `docs/adr/`, source files in the repository, and external URLs for referenced standards or articles. Nothing else.
+The only links allowed are external URLs to standards, specifications, or documentation (e.g., an RFC, a library's docs, a protocol spec). Place them inline where they support a claim in Context or Consequences.
 
-Do not link to:
+Do not link to or cross-reference:
 
-- **PRDs, tech specs, or other `docs/<feature>/` files.** These may not be checked into the repository, may live in a separate wiki or doc tool, or may have been deleted or moved by the time someone reads the ADR. The ADR cannot assume they exist.
-- **Chat transcripts, Slack threads, or meeting notes.** The reader does not have access.
-- **Ticket numbers,** unless the project has an explicit convention of preserving them and the tracker will still be reachable.
-- **Branches, PRs, or commits by hash.** These are points in time, not durable references. If you need to point at code, reference the resulting file path.
-
-The ADR captures the decision, its context, and its consequences directly in the file. If context from a PRD or tech spec matters to the decision, restate it in the ADR's Context section in the ADR's own words — do not rely on an external pointer to carry the meaning.
-
-Inline references to other ADRs are fine and encouraged where genuinely useful: "supersedes ADR-0003" or "builds on the storage choice in ADR-0007". Those are the one kind of cross-reference we know will resolve, because they live in the same directory as this file.
+- **Other ADRs.** No "See Also" sections, no "builds on ADR-0007" prose. Each ADR stands alone. The sole exception is the `Superseded by ADR-NNNN` status marker, which is a mechanical pointer, not a content reference.
+- **PRDs, tech specs, internal docs, or wiki pages.** Restate relevant context in the ADR directly.
+- **Chat transcripts, Slack threads, meeting notes, ticket numbers, branches, PRs, or commits.**
 
 ## Supersession
 
 When a new decision reverses an earlier one, handle it as a single operation:
 
-1. Create the new ADR normally (next number, today's date, Status `Accepted`). In its Context, reference the ADR it replaces: "Supersedes ADR-NNNN, which chose X; this ADR revisits that decision because..."
-2. Edit the old ADR's Status line from `Accepted` to `Superseded by ADR-NNNN` (where NNNN is the new ADR's number). Do not change anything else in the old ADR — its Context, Decision, and Consequences remain as a record of what was once believed. Do not change its Date.
+1. Create the new ADR normally (next number, today's date, Status `Accepted`). Its Context describes why the previous approach is being revisited — state the forces directly. The reader should understand the problem without consulting the old ADR.
+2. Edit the old ADR's Status line from `Accepted` to `Superseded by ADR-NNNN`. Change nothing else. Do not change its Date.
 
-Both steps happen in the same invocation. A half-done supersession — new ADR written, old one still marked Accepted — leaves the ADR log internally inconsistent, which is worse than not superseding at all.
-
-Before doing a supersession, confirm with the user: "This will mark ADR-NNNN as superseded and create ADR-MMMM in its place. Proceed?" Supersession is a deliberate act; the skill should not infer it from ambiguous phrasing.
+Both steps happen in the same invocation. Confirm with the user first: "This will mark ADR-NNNN as superseded and create ADR-MMMM in its place. Proceed?"
 
 ## After the operation
 
 Applies to all three operations — create, edit, supersede.
 
-1. Confirm what was written or changed, with the file path(s). For supersession, confirm both files.
-2. Do not commit. The user handles commits.
+1. **Review for conciseness.** Spawn a sub-agent (Agent tool) to review the ADR against the review checklist below. If it flags issues, apply the fixes. One review pass only — do not re-review after fixes.
+2. Confirm what was written or changed, with the file path(s). For supersession, confirm both files.
+3. Do not commit. The user handles commits.
+
+### Review checklist
+
+Spawn a sub-agent with the following prompt. Replace `{file_path}` with the actual path.
+
+> Review the ADR at `{file_path}` for conciseness and decision-focus. Read the file, then check every item below. For each violation, quote the offending text and suggest a replacement. If clean, say "No issues."
+>
+> Guiding principles:
+> - Retain all standard sections: Context, Decision, Consequences
+> - Trim verbose prose, not vital content
+> - Remove content that doesn't belong in an ADR
+> - Consequences and anti-patterns are important — trim only restatements of the decision
+> - Remove ADR cross-references; keep only external URLs to documentation
+>
+> Checklist:
+> 1. **Restatement** — Decision appears exactly once in the Decision section. Context and Consequences must not echo it.
+> 2. **Design details** — Implementation specifics (API shapes, data models, component interactions, sequence flows) belong in code or tech specs, not the ADR.
+> 3. **Extra sections** — Only Status, Date, Context, Decision, Consequences are allowed. Flag "See Also", "References", "Notes", "Alternatives", or any additions.
+> 4. **ADR cross-references** — No mentions of other ADRs ("see ADR-0003", "builds on ADR-0007"). Exception: `Superseded by ADR-NNNN` in the Status field.
+> 5. **Non-external links** — No links to PRDs, tech specs, internal docs, wiki pages, Slack, tickets, branches, PRs, or commits. Only external URLs allowed.
+> 6. **Verbose prose** — Paragraphs that should be bullets, filler phrases, hedging, throat-clearing.
+> 7. **Process language** — Consequences describe system effects, not team process.
+> 8. **Conversation artifacts** — No references to abandoned ideas, in-conversation pronouns, or conversational authority.
 
 ## What this skill does not do
 
