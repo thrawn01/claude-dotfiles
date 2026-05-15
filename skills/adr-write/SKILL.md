@@ -75,7 +75,7 @@ Notes on the template:
 
 - `N` in the heading is the decimal number (no leading zeros: `# 7. Use PostgreSQL...`, not `# 0007. ...`).
 - `Date` is today's ISO date. When editing, do not change the Date.
-- `Status` defaults to `Accepted`. Other valid values: `Proposed`, `Deprecated`, `Superseded by ADR-NNNN`. Only deviate if the user asks.
+- `Status` defaults to `Accepted`. Other valid values: `Proposed`, `Deprecated`, `Superseded by ADR-NNNN`. Only deviate if the user asks. The Status field is not a changelog — do not append amendment notes, dates of edits, or summaries of what changed. An ADR is a decision record, not a log book; its history lives in version control.
 - **Context** states forces and tensions. Name rejected alternatives only if they are recognizable technologies. Do not restate the decision.
 - **Decision** is active voice ("We will..."), specific, stated exactly once. Single source of truth for what was chosen.
 - **Consequences** lists effects — positive and negative. No sales pitch, no restatement of the decision.
