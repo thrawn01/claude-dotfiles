@@ -57,9 +57,13 @@ For each CONFIRMED or PARTIAL issue from Phase 1, attempt to write a surface tes
    - FAIL with the current buggy behavior (proving the bug exists)
    - PASS once the fix is applied (defining the correct behavior)
    - Follow all testing patterns from CLAUDE.md
-3. **If untestable from the surface**, report this to the user with an explanation of why — don't test internals as a workaround.
+3. **If untestable from the surface**, write a temporary internal unit test to validate the bug instead. This test:
+   - Proves the bug is real by exercising the internal code path directly
+   - Is clearly marked as temporary (prefix test name with `Temporary_`)
+   - MUST be removed before any commits — the orchestration agent owns cleanup
+   - Should be noted in the findings report so the user knows it was used
 
-Run the test to confirm it fails as expected. If it passes (bug not reproducible via surface), downgrade the issue to UNCONFIRMED and note the discrepancy.
+Run the test to confirm it fails as expected. If it passes (bug not reproducible via surface or internal test), downgrade the issue to UNCONFIRMED and note the discrepancy.
 
 ## Phase 3: Findings Report
 
@@ -80,14 +84,16 @@ Present all findings to the user before any fixes are applied.
 - **Proposed fix**: <1-2 sentence description of the fix approach>
 <end for each>
 
-### Confirmed, Not Testable from Surface: N
+### Confirmed via Temporary Internal Test: N
 
-<for each confirmed issue that can't be surface-tested>
+<for each confirmed issue proven with a temporary internal test>
 #### <N>. <issue title>
-- **Status**: Confirmed (no surface test possible)
+- **Status**: Confirmed (via temporary internal test — will be removed before commit)
 - **File**: <path:line>
-- **Why untestable**: <explanation — e.g., internal optimization, unreachable via public API>
-- **Recommendation**: <remove dead code / expose observability / accept risk>
+- **Temp test**: <test file path> — currently FAILS as expected
+- **Why no surface test**: <explanation — e.g., internal optimization, unreachable via public API>
+- **Proposed fix**: <1-2 sentence description of the fix approach>
+- **Recommendation**: <expose observability so a surface test can replace this / accept without permanent test>
 <end for each>
 
 ### Rejected: N
@@ -117,15 +123,26 @@ Present all findings to the user before any fixes are applied.
 Only proceed after explicit user approval. For each approved fix:
 
 1. Apply the fix
-2. Run the surface test — confirm it now PASSES
+2. Run the proving test (surface or temporary internal) — confirm it now PASSES
 3. Run the full test suite — confirm no regressions
 4. If fixing causes other tests to fail, STOP and report to the user — this indicates a behavioral change that needs review
 
+## Phase 5: Cleanup Temporary Tests
+
+After all fixes are applied and verified:
+
+1. Delete every temporary internal test written during Phase 2 (any test with `Temporary_` prefix)
+2. Verify the full test suite still passes after deletion
+3. Report which temporary tests were removed
+
+This phase is mandatory — no temporary tests may survive into a commit.
+
 ## Rules
 
-- **Never fix without proving first.** Every fix must be preceded by a test that demonstrates the bug (unless the issue is confirmed-but-untestable, in which case the user explicitly approved proceeding).
+- **Never fix without proving first.** Every fix must be preceded by a test that demonstrates the bug — either a surface test or a temporary internal test.
 - **Never introduce behavioral changes without review.** Fixing a bug is not license to change observable behavior. If a fix would alter what existing consumers observe, flag it for user review — do not proceed unilaterally. If a cleaner fix exists that requires a behavioral change, present it as an option but do not apply it without approval.
 - **Behavioral changes always need review.** If existing tests assert the "buggy" behavior, that behavior may be intentional. Flag it, don't override it.
 - **Prefer fixing implementation over changing tests.** When a fix causes existing tests to fail, assume the tests encode correct business requirements (per CLAUDE.md). Investigate before changing tests.
 - **One fix per issue.** Don't bundle fixes — each issue gets its own discrete change so the user can approve/reject individually.
-- **Surface tests only.** Never write tests that call internal/private functions. If you can't prove the bug from the surface, say so.
+- **Surface tests preferred, temporary internal tests allowed.** Always attempt a surface test first. If the bug cannot be reached through the public interface, write a temporary internal test to prove it. Temporary tests MUST be removed before committing — the orchestration agent is responsible for deleting all `Temporary_` prefixed tests after fixes are verified.
+- **Cleanup is mandatory.** After Phase 4 (applying fixes), delete every temporary internal test file or function written during Phase 2. No temporary tests may survive into a commit. Verify deletion before reporting completion.
