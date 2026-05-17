@@ -234,7 +234,8 @@ For EACH confirmed finding, read the actual spec text yourself (do not trust the
 
 - **Upheld**: You tried to argue against it but could not. The finding is genuinely correct. One sentence on why your best counterargument fails.
 - **Downgraded to false positive**: The finding is wrong despite two prior agents agreeing. Explain specifically what they both missed.
-- **Downgraded to clarification**: The finding was marked confirmed but the spec is actually ambiguous on this point. The prior agents assumed an interpretation that isn't the only valid one. Frame the ambiguity.
+- **Downgraded to clarification**: The finding was marked confirmed but the spec is actually ambiguous on this point AND the ambiguity concerns an API, architecture, or contract decision the user must make. Frame the ambiguity.
+- **Dismissed as implementation detail**: The finding touches internal behavior (data structure housekeeping, algorithm internals, protocol mechanics, optimization choices) that an engineer will resolve during implementation and verify through tests. It does not affect the spec's API, architecture, or contracts. One sentence naming what it is and why the engineer will handle it.
 
 SKEPTIC RULES:
 - VERIFY every quote. If the finding misquotes the spec or PRD (even slightly), downgrade it.
@@ -242,6 +243,7 @@ SKEPTIC RULES:
 - Check whether a section uses broader language that encompasses the specific behavior the finding says is missing.
 - If the suggested fix would add redundant information already implied by existing content, downgrade it.
 - If the finding's priority seems inflated (labeled P0 but an engineer would likely get it right anyway from context), downgrade to clarification or false positive.
+- If the finding concerns internal implementation mechanics (map pruning, cache eviction timing, internal state cleanup, algorithm steps) rather than API/architecture decisions, dismiss it as an implementation detail.
 - For drift findings, verify the code location and confirm the divergence is real, not a naming difference.
 - Be aggressive but honest — if the finding is genuinely correct, uphold it. Do not downgrade valid findings just to reduce the count.
 
@@ -259,7 +261,7 @@ After the skeptic pass completes (or after Phase 2 if skeptic was skipped), coll
 - **Needs clarification** findings from Phase 2
 - **Downgraded to clarification** findings from Phase 3
 
-Discard all **False positive** and **Downgraded to false positive** findings — they do not reach the fix proposal agent. Do not mention them to the user unless asked.
+Discard all **False positive**, **Downgraded to false positive**, and **Dismissed as implementation detail** findings — they do not reach the fix proposal agent. Do not mention them to the user unless asked.
 
 If no surviving findings remain, skip this phase and Phase 5 — no fixes were applied this iteration, so proceed directly to the loop-exit check (the loop will exit since zero fixes were applied).
 
