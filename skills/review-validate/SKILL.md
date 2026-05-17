@@ -113,14 +113,13 @@ Present all findings to the user before any fixes are applied.
 - **Risk**: <who might be affected>
 ```
 
-**After presenting the report, ask the user:**
-- Which confirmed issues to proceed with fixing
-- Whether behavioral changes are acceptable
-- Whether to skip any issues
+**After presenting the report, proceed to fix all confirmed issues automatically.** Only pause to ask the user when:
+- The fix changes observable behavior for existing consumers (behavioral change)
+- Multiple fix approaches exist and the choice affects a function/method signature or interface design
 
-## Phase 4: Apply Fixes (Only After User Approval)
+## Phase 4: Apply Fixes
 
-Only proceed after explicit user approval. For each approved fix:
+For each confirmed fix:
 
 1. Apply the fix
 2. Run the proving test (surface or temporary internal) — confirm it now PASSES
