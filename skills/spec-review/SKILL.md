@@ -27,6 +27,7 @@ Before starting, locate and read these files:
 - The PRD — look for `prd.md` in the same directory or parent directories (required for soft-flag analysis; proceed without if not found)
 - User stories — look for `user-stories.md` or `stories.md` in the same directory as the spec. Optional — skip if not found. When present, use as an additional cross-reference: stories describe the user-facing workflows the spec must support, so a spec gap that leaves a story unimplementable is a higher-priority finding.
 - `CONTEXT.md` — look in the `docs/` directory at the service root (i.e., walk up from the feature directory to find `docs/CONTEXT.md`). This is the domain glossary that defines canonical terminology. Optional — skip if not found.
+- Spec handoff file — look for `docs/features/{feature}/spec-handoff.md`. If present (from a prior `/prd-review` run), treat each entry as a pre-seeded finding alongside drift findings and soft-flag triage results. Include the entries in the PRE-SEEDED FINDINGS block passed to the review agent. In Claude Code, delete the handoff file once every item is resolved.
 
 If the tech spec file cannot be found, ask the user for the path.
 
@@ -59,7 +60,7 @@ For each `[NEEDS PRD CLARIFICATION: ...]` marker in the spec, check whether the 
 Run the phases below as a loop. Each iteration reviews the current state of the tech spec file (which may have been updated by previous iterations).
 
 **Stop conditions** — exit the loop when ANY of these are true:
-- An iteration produces zero confirmed findings after the skeptic pass
+- An iteration produces zero applied fixes (auto-applied or user-resolved edits that changed the spec)
 - 3 iterations have completed
 
 Track across iterations:
@@ -69,7 +70,7 @@ Track across iterations:
 - `total_validation_fp`: running count of false positives caught by the validation agent (Phase 2)
 - `total_skeptic_rejections`: running count of findings the skeptic downgraded (Phase 3)
 
-At the start of iteration 2+, re-read the tech spec file to pick up changes from prior iterations. Tell the user which iteration is starting (e.g., "Starting iteration 2 — re-reviewing after 4 fixes applied.").
+At the start of iteration 2+, re-read the tech spec file to pick up changes from prior iterations and rebuild the coverage map from the updated spec before spawning the Phase 1 agent. Tell the user which iteration is starting (e.g., "Starting iteration 2 — re-reviewing after 4 fixes applied.").
 
 Maintain a **deferred list** of findings the user explicitly dismissed or deferred ("no change needed", "defer", "skip"). Include the deferred list in the Phase 1 prompt for iteration 2+ alongside PRIOR FIXES APPLIED, so the review agent does not re-file them. A deferred finding should only re-surface if the spec text around it changed in a way that makes the original dismissal no longer apply.
 
