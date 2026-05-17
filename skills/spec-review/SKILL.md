@@ -126,17 +126,20 @@ PRIORITY DEFINITIONS:
 
 Do NOT file findings below P2 severity. Skip them entirely.
 
+THE IMPLEMENTABILITY TEST — every finding MUST pass this gate:
+Could an engineer reading ONLY this spec (plus PRD and ADRs) get stuck, build the wrong thing, or make an irreversible mistake because of this issue? If the answer is "no, a competent engineer would figure it out from context," do NOT file the finding. Specs are not exhaustive implementation guides — they define contracts, boundaries, and decisions. Implementation details that an engineer will naturally resolve during the build are not findings.
+
 FINDING CATEGORIES (use exactly these labels):
 
-1. **Gap** — A topic entirely absent from the document. Not "covered briefly," not "addressed under a different heading." If the spec says anything substantive about the topic — even one sentence — it is not a gap. Content that is present but too thin belongs under Ambiguous implementation decision. Check the coverage map before filing a gap.
+1. **Gap** — A topic that the PRD or user stories explicitly require BUT is entirely absent from the spec. Not "covered briefly," not "addressed under a different heading." If the spec says anything substantive about the topic — even one sentence — it is not a gap. Content that is present but too thin belongs under Ambiguous implementation decision. Check the coverage map before filing a gap. A topic the PRD does not mention is NOT a gap — do not invent requirements the product hasn't asked for.
 2. **Inconsistency** — Technical contradictions within the document.
 3. **Drift from code** — The spec no longer matches what has been implemented. Pre-seeded drift findings from the orchestrator should be included verbatim unless you find they are incorrect. For each drift finding, include an **Authoritativeness** field: **code-is-authoritative** (the code is shipped/tested and the spec wasn't updated) or **unclear** (genuine ambiguity about which is correct). Use the orchestrator's pre-seeded classification as a starting point but override it if your review of the evidence warrants.
 4. **ADR conflict** — The spec contradicts, ignores, or silently re-decides something already settled in an ADR. Read the relevant ADR before filing.
 5. **Stale soft flag** — A `[NEEDS PRD CLARIFICATION: ...]` marker whose question has already been answered elsewhere. Quote the marker and the passage that answers it.
 6. **Unresolved soft flag** — A `[NEEDS PRD CLARIFICATION: ...]` marker whose question is genuinely unanswered. Quote the marker and confirm the spec and PRD do not answer it.
-7. **Ambiguous implementation decision** — Requirements that could be built multiple ways with meaningfully different consequences.
-8. **Missing testing surface** — No testable entry point; external dependency without a substitute; async behavior with no observable assertion path; time coupling without an injected clock; in-memory store without a parity-testing model.
-9. **Missing failure mode** — Error handling, rollback, or degradation behavior is not specified for a path through the system.
+7. **Ambiguous implementation decision** — Requirements where two specific, named interpretations exist that produce incompatible behavior or data contracts. You MUST name both interpretations and explain why they are incompatible. "Could be clearer" or "doesn't specify the exact algorithm" is NOT an ambiguity — it's an implementation detail the engineer resolves.
+8. **Missing testing surface** — No testable entry point; external dependency without a substitute; async behavior with no observable assertion path; time coupling without an injected clock; in-memory store without a parity-testing model. Only file this if the PRD or user stories require the behavior to be tested AND the spec provides no way to observe it. Do not invent testing requirements the PRD doesn't establish.
+9. **Missing failure mode** — Error handling, rollback, or degradation behavior is not specified for a path that the PRD or user stories explicitly require to be handled gracefully. Do not flag failure modes for paths the spec intentionally leaves to infrastructure defaults or standard error propagation.
 10. **Implementation leakage** — Content in the spec that belongs in code: function bodies, full SQL statements, rendered config, pinned versions, internal-only log text, test bodies, directory trees. Signatures, type definitions, schema, and externally-visible text stay.
 
 EVIDENCE RULES — every finding MUST include evidence:
@@ -152,6 +155,13 @@ IMPORTANT RULES:
 - Do not flag a soft flag as unresolved without first confirming the spec and PRD have not already answered it. Use the orchestrator's soft-flag triage as a starting point.
 - Use the CONTEXT.md domain glossary (if provided) to verify terminology is used correctly.
 - If this is iteration 2+, do NOT re-file findings that match fixes already applied.
+
+ANTI-SCOPE-EXPANSION RULES:
+- Do NOT suggest the spec should cover topics it never claimed to cover. A spec defines its own scope. If it doesn't mention caching, that is not a "gap" unless the PRD or user stories require caching.
+- Do NOT flag missing detail when the spec's level of abstraction is intentionally high for that section. A one-sentence description of a non-critical component is sufficient if the contracts are clear.
+- Do NOT suggest adding sections, subsections, or content areas that go beyond what the PRD requires. The spec should be as short as possible while remaining unambiguous on contracts and decisions.
+- Do NOT flag "what if" scenarios unless the PRD or user stories explicitly require handling them. Hypothetical edge cases that aren't in the requirements are not findings.
+- Do NOT re-file findings that address the same conceptual area as a finding already resolved, dismissed, or deferred in a prior iteration or prior review run. If the spec text hasn't changed, the finding is stale.
 ```
 
 The prompt template above uses `<paste the full text of ...>` placeholders. The orchestrator MUST read each file (spec, PRD, user stories, CONTEXT.md) and paste its full contents into the prompt — not just the file path. Sub-agents cannot read files the orchestrator has not provided. Do NOT include ADR contents — only pass the file list so the agent can read them on demand.
@@ -246,6 +256,13 @@ SKEPTIC RULES:
 - If the finding concerns internal implementation mechanics (map pruning, cache eviction timing, internal state cleanup, algorithm steps) rather than API/architecture decisions, dismiss it as an implementation detail.
 - For drift findings, verify the code location and confirm the divergence is real, not a naming difference.
 - Be aggressive but honest — if the finding is genuinely correct, uphold it. Do not downgrade valid findings just to reduce the count.
+
+SCOPE-EXPANSION SKEPTICISM — apply these additional checks aggressively:
+- **Implementability test**: Would an engineer actually get stuck here, or would they figure it out? If the answer is "they'd figure it out," dismiss as implementation detail.
+- **Requirement tracing**: Does the PRD or user stories actually require the behavior the finding says is missing? If not, dismiss as scope expansion.
+- **Spec-is-not-a-tutorial test**: Is the finding asking the spec to explain HOW to implement something rather than WHAT the contract is? Dismiss as implementation detail.
+- **Diminishing returns test**: Is this finding making the spec longer without making it less ambiguous on any contract or decision? Dismiss as false positive.
+- **Prior-review staleness**: If this looks like a finding that would have been caught and dismissed in an earlier review (the spec text is settled, well-structured, and internally consistent on this topic), lean toward dismissal.
 
 CONFIRMED FINDINGS TO CHALLENGE:
 <paste only confirmed findings from Phase 2, including the validation agent's confirmation reasoning>
