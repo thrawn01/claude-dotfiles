@@ -124,6 +124,7 @@ Only proceed after explicit user approval. For each approved fix:
 ## Rules
 
 - **Never fix without proving first.** Every fix must be preceded by a test that demonstrates the bug (unless the issue is confirmed-but-untestable, in which case the user explicitly approved proceeding).
+- **Never introduce behavioral changes without review.** Fixing a bug is not license to change observable behavior. If a fix would alter what existing consumers observe, flag it for user review — do not proceed unilaterally. If a cleaner fix exists that requires a behavioral change, present it as an option but do not apply it without approval.
 - **Behavioral changes always need review.** If existing tests assert the "buggy" behavior, that behavior may be intentional. Flag it, don't override it.
 - **Prefer fixing implementation over changing tests.** When a fix causes existing tests to fail, assume the tests encode correct business requirements (per CLAUDE.md). Investigate before changing tests.
 - **One fix per issue.** Don't bundle fixes — each issue gets its own discrete change so the user can approve/reject individually.

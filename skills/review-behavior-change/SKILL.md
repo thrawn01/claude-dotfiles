@@ -6,6 +6,12 @@ allowed-tools: Read, Edit, Bash, Agent, AskUserQuestion
 
 # Surface Change Review
 
+## Execution Model
+
+Delegate the ENTIRE workflow below to a single top-level sub-agent (Agent tool, **foreground**). The main context must not perform the analysis itself — this prevents conversation history from biasing the review. Pass the sub-agent the full skill instructions (everything below this section), the `$ARGUMENTS`, and the repository path. The sub-agent performs all phases and returns the final report. The main context relays the report to the user and handles any follow-up (CHANGELOG approval, etc.).
+
+---
+
 Review recent code changes (uncommitted, commit, or branch diff) for behavioral changes at the system's surface — the outermost layer consumers interact with (HTTP endpoints, CLI entry points, exported functions, library public APIs). Flag any surface-level behavioral change that is not explicitly justified in a docs/ artifact (ADR, PRD, tech spec, or implementation plan).
 
 ## Change Severity: ADR vs CHANGELOG
