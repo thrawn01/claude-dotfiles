@@ -368,6 +368,8 @@ For each finding the fix proposal agent routed as **surface-to-user**, check the
 **Finding N: <title>** (<category>)
 <one-line issue summary>
 
+**Why this matters:** <1-2 sentences explaining the technical or product consequence of leaving this unresolved — what breaks, what becomes ambiguous for implementers, or what decision gets forced downstream. For technical findings, explain the specific scenario or constraint that makes this a problem.>
+
 **Option 1** (recommended) — <summary>
 **Option 2** — <summary>
 **Option 3** — <summary (if present)>
@@ -375,7 +377,7 @@ For each finding the fix proposal agent routed as **surface-to-user**, check the
 The fix agent recommends Option 1 because <reason>. Pick one or propose another.
 ```
 
-**Clarification findings** (verdict: Needs clarification or Downgraded to clarification) — the PRD and available context are both ambiguous, so this is a product decision without a clear right answer. Present using AskUserQuestion with the ambiguity framed as a question and concrete options derived from the fix proposal agent's output. After the user answers, apply the corresponding PRD edit from the fix proposal agent's options (or craft a new edit if the user's answer doesn't match any proposed option).
+**Clarification findings** (verdict: Needs clarification or Downgraded to clarification) — the PRD and available context are both ambiguous, so this is a product decision without a clear right answer. Before presenting options, include a "Why this matters" explanation so the user understands the technical or product consequence that motivates the question — what scenario, constraint, or downstream decision makes this ambiguity problematic. Present using AskUserQuestion with the ambiguity framed as a question and concrete options derived from the fix proposal agent's output. After the user answers, apply the corresponding PRD edit from the fix proposal agent's options (or craft a new edit if the user's answer doesn't match any proposed option).
 
 Cluster a finding with the next one only when the fix proposal agent flagged them as tightly coupled. Resolve each before moving on. Apply the user's chosen option to the PRD via the Edit tool immediately after they answer.
 
