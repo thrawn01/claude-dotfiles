@@ -83,7 +83,7 @@ Maintain a **deferred list** of findings the user explicitly dismissed or deferr
 
 ## Phase 1: Review Agent
 
-Spawn a sub-agent (using the Agent tool, **foreground**) with the following responsibilities:
+Spawn a sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) with the following responsibilities:
 
 **Prompt structure:**
 
@@ -154,6 +154,7 @@ EVIDENCE RULES — every finding MUST include evidence:
 - If you cannot produce evidence, do not file the finding.
 
 IMPORTANT RULES:
+- Do NOT expand scope. A review sharpens what the PRD already covers — it does not add new features, new user segments, new integrations, or new requirements the author did not include. If a topic is absent from the PRD, it is intentionally out of scope unless its absence creates an internal contradiction or blocks the tech spec. When in doubt, flag it as a question for the user rather than filing a gap.
 - Generate findings against the coverage map. Do not flag gaps for topics the map shows are covered.
 - ADR-settled scope is not a gap just because the PRD refers out to it.
 - Do not raise "missing success metrics" as a gap unless the PRD makes an outcome claim that requires measurement to verify.
@@ -165,7 +166,7 @@ The prompt template above uses `<paste the full text of ...>` placeholders. The 
 
 ## Phase 2: Validation Agent
 
-Take the findings from Phase 1 and spawn a second sub-agent (using the Agent tool, **foreground**) to validate each one.
+Take the findings from Phase 1 and spawn a second sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) to validate each one.
 
 **Prompt structure:**
 
@@ -212,7 +213,7 @@ Read the PRD, tech spec, and CONTEXT.md (if found) yourself and include their fu
 
 ## Phase 3: Skeptic Agent
 
-Take only the **Confirmed** findings from Phase 2 and spawn a third sub-agent (using the Agent tool, **foreground**) whose job is to argue against each one.
+Take only the **Confirmed** findings from Phase 2 and spawn a third sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) whose job is to argue against each one.
 
 If Phase 2 produced zero confirmed findings, skip this phase entirely.
 
@@ -271,7 +272,7 @@ Discard all **False positive** and **Downgraded to false positive** findings —
 
 If no surviving findings remain, skip this phase and Phase 5 — no fixes were applied this iteration, so proceed directly to the loop-exit check (the loop will exit since zero fixes were applied).
 
-Spawn a sub-agent (using the Agent tool, **foreground**) to propose concrete fixes for every surviving finding and pick the best option for each.
+Spawn a sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) to propose concrete fixes for every surviving finding and pick the best option for each.
 
 **Prompt structure:**
 
@@ -315,8 +316,9 @@ Rationale: <trade-off vs Option 1>
 
 ROUTING RULES — classify each finding:
 
-**auto-apply** (clear-cut corrections, no product decision):
+**auto-apply** (clear-cut corrections, no product decision, no scope expansion):
 - Reverse drift where Drift direction = "spec-leads" AND the spec's decision is unambiguously correct (e.g., the spec resolved a detail the PRD left vague and the resolution is the only reasonable one)
+- NEVER auto-apply a fix that adds new requirements, features, user segments, or integrations not already in the PRD
 
 **surface-to-user** (requires a product decision):
 - Gaps
@@ -331,6 +333,7 @@ ROUTING RULES — classify each finding:
 - Downgraded to clarification (from skeptic)
 
 FIX PROPOSAL RULES:
+- Do NOT propose fixes that expand the PRD's scope — no new features, user segments, integrations, or requirements the author did not include. Fixes should clarify, correct, or resolve ambiguity within existing scope. If a fix would expand scope, route it as surface-to-user and frame it as a question ("Should the PRD also cover X?"), not a recommended edit.
 - Each option must be a concrete PRD edit, not a vague suggestion. Show the old text and new text so it can be applied directly.
 - For auto-apply findings, still propose 2+ options and pick the best one — the orchestrator applies the recommended option without user input, but having alternatives documented helps if the edit needs adjustment.
 - For surface-to-user findings, the options will be presented to the user for a decision. Make each option distinct with meaningfully different consequences. Do not pad with a "do nothing" option unless deferral is a genuinely reasonable choice.
@@ -362,7 +365,7 @@ After applying, tell the user what was auto-applied in a brief summary list, inc
 
 For each finding the fix proposal agent routed as **surface-to-user**, check the finding's verdict to determine presentation style:
 
-**Design-decision findings** (verdict: Upheld or Confirmed) — these have a clear issue and need the user to pick an approach. Present the fix proposal agent's options:
+**Design-decision findings** (verdict: Upheld or Confirmed) — these have a clear issue and need the user to pick an approach. Before presenting, score the finding against the high-impact trigger criteria in the `deliberate` skill. If the finding is P0 or P1 and 2+ signals fire, run the deliberation protocol — the synthesis replaces the standard options block below. Otherwise, present the fix proposal agent's options:
 
 ```
 **Finding N: <title>** (<category>)
@@ -435,7 +438,7 @@ File updated: <path>
    - **Surprising without context** — a future reader will wonder "why did they do it this way?"
    - **Result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
 
-   If any is missing, skip the ADR; the decision already lives in the PRD.
+   If any is missing, skip the ADR; the decision already lives in the PRD. Decisions resolved through the `deliberate` skill automatically satisfy "Hard to reverse" and "Result of a real trade-off" — only check "Surprising without context." These should already have been offered as ADR candidates immediately after deliberation resolved; do not re-offer them here.
 6. For each decision that passes the checklist, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
 7. Note that the reviewed PRD is ready as input to `spec-create` or `/spec-review` when the user is ready.
 8. Do not commit. The user handles commits.

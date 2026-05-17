@@ -105,13 +105,13 @@ Both steps happen in the same invocation. Confirm with the user first: "This wil
 
 Applies to all three operations — create, edit, supersede.
 
-1. **Review for conciseness.** Spawn a sub-agent (Agent tool) to review the ADR against the review checklist below. If it flags issues, apply the fixes. One review pass only — do not re-review after fixes.
+1. **Review for conciseness.** Spawn a sub-agent (Agent tool, `model: "haiku"`) to review the ADR against the review checklist below. If it flags issues, apply the fixes. One review pass only — do not re-review after fixes.
 2. Confirm what was written or changed, with the file path(s). For supersession, confirm both files.
 3. Do not commit. The user handles commits.
 
 ### Review checklist
 
-Spawn a sub-agent with the following prompt. Replace `{file_path}` with the actual path.
+Spawn a sub-agent (`model: "haiku"`) with the following prompt. Replace `{file_path}` with the actual path.
 
 > Review the ADR at `{file_path}` for conciseness and decision-focus. Read the file, then check every item below. For each violation, quote the offending text and suggest a replacement. If clean, say "No issues."
 >

@@ -39,7 +39,7 @@ At the start of iteration 2+, re-read the user stories file to pick up changes f
 
 ## Phase 1: Review Agent
 
-Spawn a sub-agent (using the Agent tool, **foreground**) with the following responsibilities:
+Spawn a sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) with the following responsibilities:
 
 **Prompt structure:**
 
@@ -97,7 +97,7 @@ Read the user stories, PRD, and CONTEXT.md (if found) yourself and include their
 
 ## Phase 2: Validation Agent
 
-Take the findings from Phase 1 and spawn a second sub-agent (using the Agent tool, **foreground**) to validate each one.
+Take the findings from Phase 1 and spawn a second sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) to validate each one.
 
 **Prompt structure:**
 
@@ -133,7 +133,7 @@ Read the user stories, PRD, and CONTEXT.md (if found) yourself and include their
 
 ## Phase 3: Skeptic Agent
 
-Take only the **Confirmed** findings from Phase 2 and spawn a third sub-agent (using the Agent tool, **foreground**) whose job is to argue against each one.
+Take only the **Confirmed** findings from Phase 2 and spawn a third sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) whose job is to argue against each one.
 
 If Phase 2 produced zero confirmed findings, skip this phase entirely.
 

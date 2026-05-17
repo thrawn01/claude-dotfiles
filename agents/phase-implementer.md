@@ -1,5 +1,6 @@
 ---
 name: phase-implementer
+model: sonnet
 description: Implements a single phase from a multi-phase technical plan with testing and verification
 tools: Bash, Glob, Grep, Read, Edit, Write, WebFetch, WebSearch, TodoWrite
 ---

@@ -8,7 +8,7 @@ allowed-tools: Read, Edit, Bash, Agent, AskUserQuestion
 
 ## Execution Model
 
-Delegate the ENTIRE workflow below to a single top-level sub-agent (Agent tool, **foreground**). The main context must not perform the analysis itself — this prevents conversation history from biasing the review. Pass the sub-agent the full skill instructions (everything below this section), the `$ARGUMENTS`, and the repository path. The sub-agent performs all phases and returns the final report. The main context relays the report to the user and handles any follow-up (CHANGELOG approval, etc.).
+Delegate the ENTIRE workflow below to a single top-level sub-agent (Agent tool, **foreground**, `model: "sonnet"`). The main context must not perform the analysis itself — this prevents conversation history from biasing the review. Pass the sub-agent the full skill instructions (everything below this section), the `$ARGUMENTS`, and the repository path. The sub-agent performs all phases and returns the final report. The main context relays the report to the user and handles any follow-up (CHANGELOG approval, etc.).
 
 ---
 
@@ -92,7 +92,7 @@ Also locate the docs directory:
 
 ## Phase 1: Change Analysis Agent
 
-Spawn a sub-agent (Agent tool, **foreground**) to analyze the diff and classify changes.
+Spawn a sub-agent (Agent tool, **foreground**, `model: "sonnet"`) to analyze the diff and classify changes.
 
 **Prompt structure:**
 
@@ -148,7 +148,7 @@ Include the full diff content in the prompt. If the diff is very large (>500 lin
 
 ## Phase 2: Documentation Cross-Reference Agent
 
-If Phase 1 found surface changes, spawn a second sub-agent (Agent tool, **foreground**) to check whether each is documented.
+If Phase 1 found surface changes, spawn a second sub-agent (Agent tool, **foreground**, `model: "sonnet"`) to check whether each is documented.
 
 **Prompt structure:**
 

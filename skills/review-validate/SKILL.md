@@ -16,7 +16,7 @@ If the context contains no identifiable issues, ask the user what they'd like va
 
 ## Phase 1: Validate Each Issue (Parallel Sub-Agents)
 
-Spawn one sub-agent per issue (Agent tool, **foreground**, run in parallel where independent) to determine whether the issue is real.
+Spawn one sub-agent per issue (Agent tool, **foreground**, `model: "sonnet"`, run in parallel where independent) to determine whether the issue is real.
 
 **Sub-agent prompt structure:**
 

@@ -76,7 +76,7 @@ Maintain a **deferred list** of findings the user explicitly dismissed or deferr
 
 ## Phase 1: Review Agent
 
-Spawn a sub-agent (using the Agent tool, **foreground**) with the following responsibilities:
+Spawn a sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) with the following responsibilities:
 
 **Prompt structure:**
 
@@ -158,7 +158,7 @@ The prompt template above uses `<paste the full text of ...>` placeholders. The 
 
 ## Phase 2: Validation Agent
 
-Take the findings from Phase 1 and spawn a second sub-agent (using the Agent tool, **foreground**) to validate each one.
+Take the findings from Phase 1 and spawn a second sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) to validate each one.
 
 **Prompt structure:**
 
@@ -204,7 +204,7 @@ Read the tech spec, PRD, and CONTEXT.md (if found) yourself and include their fu
 
 ## Phase 3: Skeptic Agent
 
-Take only the **Confirmed** findings from Phase 2 and spawn a third sub-agent (using the Agent tool, **foreground**) whose job is to argue against each one.
+Take only the **Confirmed** findings from Phase 2 and spawn a third sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) whose job is to argue against each one.
 
 If Phase 2 produced zero confirmed findings, skip this phase entirely.
 
@@ -263,7 +263,7 @@ Discard all **False positive** and **Downgraded to false positive** findings —
 
 If no surviving findings remain, skip this phase and Phase 5 — no fixes were applied this iteration, so proceed directly to the loop-exit check (the loop will exit since zero fixes were applied).
 
-Spawn a sub-agent (using the Agent tool, **foreground**) to propose concrete fixes for every surviving finding and pick the best option for each.
+Spawn a sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) to propose concrete fixes for every surviving finding and pick the best option for each.
 
 **Prompt structure:**
 
@@ -356,7 +356,7 @@ After applying, tell the user what was auto-applied in a brief summary list, inc
 
 For each finding the fix proposal agent routed as **surface-to-user**, check the finding's verdict to determine presentation style:
 
-**Design-decision findings** (verdict: Upheld or Confirmed) — these have a clear issue and need the user to pick an approach. Present the fix proposal agent's options:
+**Design-decision findings** (verdict: Upheld or Confirmed) — these have a clear issue and need the user to pick an approach. Before presenting, score the finding against the high-impact trigger criteria in the `deliberate` skill. If the finding is P0 or P1 and 2+ signals fire, run the deliberation protocol — the synthesis replaces the standard options block below. Otherwise, present the fix proposal agent's options:
 
 ```
 **Finding N: <title>** (<category>)
@@ -428,7 +428,7 @@ File updated: <path>
    - **Surprising without context** — a future reader will wonder "why did they do it this way?"
    - **Result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
 
-   If any is missing, skip the ADR; the decision already lives in the spec. Decisions made during a spec review — resolving soft flags, settling ambiguous component ownership, choosing between implementation approaches — are strong ADR candidates when they pass the checklist.
+   If any is missing, skip the ADR; the decision already lives in the spec. Decisions made during a spec review — resolving soft flags, settling ambiguous component ownership, choosing between implementation approaches — are strong ADR candidates when they pass the checklist. Decisions resolved through the `deliberate` skill automatically satisfy "Hard to reverse" and "Result of a real trade-off" — only check "Surprising without context." These should already have been offered as ADR candidates immediately after deliberation resolved; do not re-offer them here.
 5. For each decision that passes the checklist, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
 6. Note that the reviewed spec is ready as the primary input to `plan-from-context` or `plan-from-prompt` when the user is ready to plan implementation.
 7. Do not commit. The user handles commits.

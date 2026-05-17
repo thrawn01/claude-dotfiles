@@ -2,7 +2,7 @@
 name: code-review-critical
 description: Use this agent when you need to review recently written or modified code for critical issues that could impact production. This agent focuses exclusively on bugs, performance problems, security vulnerabilities, and correctness issues - not style or minor improvements. Ideal for pre-merge reviews where you want a quick assessment of whether the code is safe to deploy.\n\nExamples:\n- <example>\n  Context: The user wants to review code that was just written for critical issues.\n  user: "I've implemented the authentication module. Can you check it?"\n  assistant: "I'll use the code-review-critical agent to analyze the authentication module for any critical issues."\n  <commentary>\n  Since the user has completed writing code and wants it reviewed, use the code-review-critical agent to identify potential bugs, security, or performance issues.\n  </commentary>\n  </example>\n- <example>\n  Context: After implementing a new feature, the developer wants a safety check.\n  user: "Just finished the payment processing logic"\n  assistant: "Let me review the payment processing logic for critical issues using the code-review-critical agent."\n  <commentary>\n  Payment processing is security-critical, so use the code-review-critical agent to ensure there are no vulnerabilities or correctness issues.\n  </commentary>\n  </example>
 tools: Bash, Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, KillBash
-model: inherit
+model: sonnet
 color: orange
 ---
 

@@ -29,7 +29,7 @@ Then list every file in `docs/adr/` and read each title. Read the full ADR for a
 
 Generate the full list of technical questions and decisions the spec needs to resolve, present it to the user, then immediately start on the first question. Do not pause to ask whether to reorder, skip, or add items — the user can redirect at any point as items come up, but the default is forward motion. Showing the list gives shape; asking permission to proceed just adds friction. Work through the questions in order, one at a time. Cluster a question with the next one only when the two are so tightly coupled that answering one alone would force re-opening the other (e.g., "which store backs this?" and "what's the key shape?"). Offer a suggested answer or design direction alongside each question. Lean on established codebase patterns and relevant ADRs unless there is a reason to depart — when departing, name the reason and flag the departure as requiring a superseding ADR.
 
-When the answer is clear, a plain "I'd suggest X — sound good?" is enough. When the question has multiple defensible approaches with meaningfully different tradeoffs, use a numbered options block with one option explicitly flagged as recommended:
+When the answer is clear, a plain "I'd suggest X — sound good?" is enough. When the question has multiple defensible approaches with meaningfully different tradeoffs, first score it against the high-impact trigger criteria in the `deliberate` skill. If 2+ signals fire, pause and ask the user whether to deliberate before recommending. If the user agrees, run the deliberation protocol — the synthesis replaces the standard options block below. If the user declines (or fewer than 2 signals fired), use a numbered options block with one option explicitly flagged as recommended:
 
 ```
 **Option 1** (recommended) — ...
@@ -40,6 +40,8 @@ I recommend Option 1 because <reason>. Pick one or propose another.
 ```
 
 Numbered options let the user respond "go with 2" without re-typing. The inline `(recommended)` tag and the rationale line make the pick explicit. What is never acceptable is a bare list of options without a pick — the user came to you for a recommendation.
+
+The user can also say "deliberate on this" at any point during the discussion to trigger the deliberation protocol for the current question, bypassing trigger scoring.
 
 ## What a tech spec covers
 
@@ -164,7 +166,7 @@ Only link what the reader is guaranteed to have access to — in-repo docs, comm
    - **Surprising without context** — a future reader will wonder "why did they do it this way?"
    - **Result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
 
-   If any is missing, skip the ADR; the decision already lives in the spec. Decisions made here — storage choice, API patterns, auth approach, error handling strategy — are strong ADR candidates when they pass the checklist.
+   If any is missing, skip the ADR; the decision already lives in the spec. Decisions made here — storage choice, API patterns, auth approach, error handling strategy — are strong ADR candidates when they pass the checklist. Decisions resolved through the `deliberate` skill automatically satisfy "Hard to reverse" and "Result of a real trade-off" — only check "Surprising without context." These should already have been offered as ADR candidates immediately after deliberation resolved; do not re-offer them here.
 6. For each decision that passes the checklist, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
 7. Note that the spec is the primary input to `plan-from-context` or `plan-from-prompt` when the user is ready to plan implementation.
 8. Do not commit. The user handles commits.
