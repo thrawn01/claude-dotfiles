@@ -1,5 +1,5 @@
 ---
-name: surface-change-review
+name: review-behavior-change
 description: Review code changes for undocumented behavioral/surface changes. Flags modifications to public interfaces, API contracts, or observable behavior that lack justification in an ADR, PRD, tech spec, or implementation plan. Use when the user asks to "check for breaking changes", "review surface changes", "audit behavioral changes", or "validate contract compliance".
 allowed-tools: Read, Edit, Bash, Agent, AskUserQuestion
 ---
