@@ -76,7 +76,6 @@ Use TaskCreate to create tasks for:
 - Review plan with sub-agent
 - Run plan-review skill
 - Run spec-coverage validation sub-agent
-- Deliver final plan to user
 
 Use TaskUpdate to mark each task as in_progress when working on it and completed when done.
 
@@ -204,9 +203,10 @@ Only proceed to planning when you can answer "yes" to all three.
    - Data flow documentation
 
 3. **Testing Requirements**
-   - High-level test objectives
+   - Follow the `surface-testing` skill — read it and apply its principles when writing testing sections
+   - Tests must exercise the system through its public interface only (HTTP endpoints, CLI entry points, exported functions)
+   - Code architecture must be designed for surface testability (the skill defines patterns for this)
    - Key scenarios to cover
-   - Tests validate complete critical path through public APIs only
    - Include database interaction validation where applicable
    - Note: Implementation should follow TDD approach
 
@@ -375,6 +375,15 @@ Out-of-scope items must not block merge of the final PR.]
 
 Spawn a review agent using the Task tool (subagent_type: "general-purpose", model: "sonnet"). Ask it to review the plan at `plans/[filename].md` for completeness, clarity, and missing information. It should evaluate whether another AI agent could implement the plan without asking questions, whether all requirements are addressed, and whether there are ambiguities or missing edge cases.
 
+Additionally, the agent must:
+
+1. Read the `surface-testing` skill and validate that:
+   - The plan's testing requirements only test through public interfaces (never internal/private functions)
+   - The plan's code architecture is designed for surface testability (e.g., thin `main()` wrapping a testable `Run()`, servers with `Start()`/`Shutdown()`, observability APIs for async behavior)
+   - Any behavior that cannot be tested via the public interface is either removed from the plan or exposed through an observability surface
+
+2. Read the project's CLAUDE.md and verify any code examples, function signatures, or testing patterns in the plan are consistent with its guidelines
+
 Present review findings to the user and ask if they want changes addressed. Iterate until satisfactory.
 
 #### Step 5b: Plan-Review Skill
@@ -424,14 +433,9 @@ A comprehensive design document that:
 
 **This plan will be implemented by a DIFFERENT agent using `/plan-implement` command.**
 
-### 7. Plan Delivery (MANDATORY FINAL STEP)
+### 7. Completion
 
-After completing steps 1-6:
-
-1. **Confirm plan is written** to `plans/<descriptive-name>-implementation-plan.md`
-2. **Confirm all three reviews completed**: general review, plan-review skill, spec-coverage validation
-3. **Present final summary** to user including: number of phases, that file:line references and validation commands are included, spec traceability confirmed, the file path created, and a reminder to run `/plan-implement` when ready
-4. **STOP HERE** - Do not proceed beyond this point
+After completing steps 1-6, confirm the plan file path and remind the user to run `/plan-implement` when ready.
 
 ## Boundaries
 
