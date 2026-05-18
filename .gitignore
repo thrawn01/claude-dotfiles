@@ -1,3 +1,6 @@
+CLAUDE.md
+settings.json
+
 # Company-specific skills (contain internal hostnames, paths, and infrastructure details)
 skills/deploy-to-dev/
 skills/open-pr/
