@@ -6,7 +6,13 @@ allowed-tools: Read, Edit, Bash, Agent, AskUserQuestion
 
 # Review a Technical Spec
 
-Review an existing tech spec using four sub-agent passes per iteration: a review agent finds issues, a validation agent confirms or rejects each finding, a skeptic agent challenges confirmed findings to eliminate false positives, and a fix proposal agent produces concrete spec edits with recommendations. The orchestrator applies surviving fixes and loops until no new confirmed findings emerge (max 3 iterations).
+## Goal
+
+Make the spec implementable: an engineer can build the feature from this spec without getting stuck on ambiguous contracts, contradictory requirements, or missing decisions. The review is done when a goal-validation agent confirms this — not when it runs out of findings to file. The skill does not pursue completeness, exhaustiveness, or editorial polish.
+
+## How it works
+
+The orchestrator runs a review cycle (find issues → validate → skeptic → fix → apply), then a **goal validation agent** reads the updated spec cold and answers: "Is this spec implementable?" If yes, the review is done. If no, the validator names specific blockers and those become the sole inputs for the next cycle (max 5 iterations).
 
 ## Environment
 
@@ -57,11 +63,13 @@ For each `[NEEDS PRD CLARIFICATION: ...]` marker in the spec, check whether the 
 
 ## Iteration Loop
 
-Run the phases below as a loop. Each iteration reviews the current state of the tech spec file (which may have been updated by previous iterations).
+Run Phases 1–5 followed by Phase 6 (Goal Validation) as a loop. Each iteration reviews the current state of the tech spec file (which may have been updated by previous iterations).
 
 **Stop conditions** — exit the loop when ANY of these are true:
-- An iteration produces zero applied fixes (auto-applied or user-resolved edits that changed the spec)
-- 3 iterations have completed
+- Phase 6 (Goal Validation) returns **PASS** — the spec is implementable
+- 5 iterations have completed (hard cap)
+
+**Do NOT exit** just because an iteration produced zero findings or zero applied fixes — always run Phase 6 to confirm the spec is implementable. The goal validation is the authoritative exit signal.
 
 Track across iterations:
 - `total_auto_applied`: running count of all auto-applied fixes (spec was edited)
@@ -73,6 +81,8 @@ Track across iterations:
 At the start of iteration 2+, re-read the tech spec file to pick up changes from prior iterations and rebuild the coverage map from the updated spec before spawning the Phase 1 agent. Tell the user which iteration is starting (e.g., "Starting iteration 2 — re-reviewing after 4 fixes applied.").
 
 Maintain a **deferred list** of findings the user explicitly dismissed or deferred ("no change needed", "defer", "skip"). Include the deferred list in the Phase 1 prompt for iteration 2+ alongside PRIOR FIXES APPLIED, so the review agent does not re-file them. A deferred finding should only re-surface if the spec text around it changed in a way that makes the original dismissal no longer apply.
+
+**Iteration 2+ input scoping:** In iteration 2+, the Phase 1 review agent receives ONLY the blockers identified by the Phase 6 goal validation agent from the previous iteration. It does not perform an open-ended review. Its job is to produce findings and fixes for those specific blockers only.
 
 ## Phase 1: Review Agent
 
@@ -103,10 +113,11 @@ COVERAGE MAP (from orchestrator):
 PRE-SEEDED FINDINGS (from orchestrator):
 <paste any drift findings from code scan, pre-seeded questions from plan-from-prompt, and soft-flag triage results>
 
-ITERATION: <N of max 3>
+ITERATION: <N of max 5>
 <if iteration 2+, include:>
 PRIOR FIXES APPLIED: <brief list of fixes from previous iterations so you don't re-file them>
 DEFERRED FINDINGS (user dismissed — do NOT re-file unless surrounding spec text changed): <list of deferred finding titles and categories>
+BLOCKERS FROM GOAL VALIDATION (iteration 2+ only — these are your ONLY inputs, do not perform an open-ended review): <paste the specific blockers the goal validation agent identified>
 
 For each finding, use this format:
 
@@ -262,7 +273,6 @@ SCOPE-EXPANSION SKEPTICISM — apply these additional checks aggressively:
 - **Requirement tracing**: Does the PRD or user stories actually require the behavior the finding says is missing? If not, dismiss as scope expansion.
 - **Spec-is-not-a-tutorial test**: Is the finding asking the spec to explain HOW to implement something rather than WHAT the contract is? Dismiss as implementation detail.
 - **Diminishing returns test**: Is this finding making the spec longer without making it less ambiguous on any contract or decision? Dismiss as false positive.
-- **Prior-review staleness**: If this looks like a finding that would have been caught and dismissed in an earlier review (the spec text is settled, well-structured, and internally consistent on this topic), lean toward dismissal.
 
 CONFIRMED FINDINGS TO CHALLENGE:
 <paste only confirmed findings from Phase 2, including the validation agent's confirmation reasoning>
@@ -398,13 +408,79 @@ Keep a running log of all decisions made during the review (both auto-applied an
 
 If the user pushes back with "that's already in the spec," stop and re-read the section they point to before continuing.
 
+### Proceed to Goal Validation
+
+After processing all findings for this iteration, proceed to Phase 6 (Goal Validation) to determine whether the spec is now implementable.
+
+## Phase 6: Goal Validation
+
+After Phase 5 completes (or after Phase 1 produces zero findings), spawn a sub-agent (using the Agent tool, **foreground**, `model: "sonnet"`) that reads the spec with fresh eyes and evaluates implementability.
+
+This agent is separate from the review agent — it has no knowledge of what findings were filed or fixed. Its only job is to answer: "Can an engineer build this?"
+
+**Prompt structure:**
+
+```
+You are a goal validation agent. Your job is to determine whether this tech spec is IMPLEMENTABLE — meaning an engineer can build the feature from this spec without getting stuck on ambiguous contracts, contradictory requirements, or missing decisions.
+
+You are NOT a reviewer. Do NOT look for things to improve, polish, or expand. You are answering one question: if an engineer sat down to build this tomorrow with only this spec (plus the PRD and ADRs), would they get stuck anywhere?
+
+TECH SPEC CONTENTS:
+<paste the full text of the tech spec file>
+
+PRD CONTENTS:
+<paste the full text of the PRD, or "not found">
+
+USER STORIES:
+<paste the full text of user-stories.md or stories.md, or "not found">
+
+CONTEXT FILE (domain glossary):
+<paste the full text of CONTEXT.md, or "not found">
+
+ADR FILES (read on demand if needed):
+<list each ADR filename and path, or "none found">
+
+Evaluate the spec against these criteria:
+
+1. **Contracts are unambiguous** — For every API, interface, data model, or component boundary the spec defines, could two engineers independently build compatible implementations? If yes for all, this criterion passes.
+
+2. **No contradictions** — Does the spec contradict itself anywhere? (Not "could be clearer" — actually says two incompatible things.) If no contradictions, this criterion passes.
+
+3. **Decisions are made** — Are there any places where the spec explicitly defers a decision that an engineer would need answered before they can write code? (Unresolved soft flags, TBDs, or "to be determined" language.) If no unresolved blockers, this criterion passes.
+
+4. **PRD coverage** — Does the spec address every requirement in the PRD that needs a technical decision? (Not every PRD bullet needs spec coverage — only those that require architectural or contract decisions.) If yes, this criterion passes.
+
+IMPORTANT RULES:
+- A spec does NOT need to be exhaustive to pass. It needs to be unambiguous on contracts and decisions.
+- Missing implementation details are NOT blockers. Engineers resolve those during the build.
+- Brevity is fine. A one-sentence description of a component is sufficient if the contracts are clear.
+- "Could be more detailed" is NOT a blocker. Only "an engineer would get stuck here" is a blocker.
+- If the spec is good enough to build from, it PASSES. Do not hold it to an academic standard.
+
+Respond in this format:
+
+**VERDICT**: PASS or FAIL
+
+**Criteria results**:
+1. Contracts: PASS/FAIL — <one sentence>
+2. Contradictions: PASS/FAIL — <one sentence>
+3. Decisions: PASS/FAIL — <one sentence>
+4. PRD coverage: PASS/FAIL — <one sentence>
+
+<if FAIL, include:>
+**Blockers** (ONLY list items that would cause an engineer to get stuck):
+- <Blocker 1: specific description of what's ambiguous/contradictory/missing and WHERE in the spec>
+- <Blocker 2: ...>
+
+Maximum 5 blockers. If you find yourself listing more than 5, you are being too strict — re-evaluate whether each is truly a blocker vs. a preference.
+```
+
 ### Decide whether to loop
 
-After processing all findings for this iteration:
+Based on the goal validation agent's verdict:
 
-- If any confirmed fixes were applied to the spec file this iteration (auto-applied edits or user-resolved edits that changed the spec) AND iteration count < 3, continue to the next iteration (go back to Phase 1).
-- User dismissals — where the user chose "no change" or "defer" — do not count as applied fixes and do not trigger another iteration.
-- Otherwise, exit the loop.
+- **PASS** → Exit the loop. The spec is implementable. Proceed to "Writing the updated document."
+- **FAIL** → If iteration count < 5, continue to the next iteration. Pass the blocker list to Phase 1 as its ONLY inputs (the review agent addresses these specific blockers, not an open-ended review). If iteration count = 5, exit the loop and report the remaining blockers to the user as unresolved items.
 
 ## Writing the updated document
 
@@ -423,6 +499,7 @@ After the loop exits, print a final summary across all iterations:
 ```
 ## Spec Review Complete
 
+**Result**: <PASS — spec is implementable | INCOMPLETE — blockers remain after 5 iterations>
 **Iterations**: N
 **Auto-applied fixes**: N (across all iterations)
 - <one-line summary of each auto-applied fix, grouped by iteration>
@@ -433,6 +510,10 @@ After the loop exits, print a final summary across all iterations:
 **User dismissals**: N (findings the user deferred or skipped without a spec change)
 **Validation false positives**: N (rejected by the validation agent)
 **Skeptic rejections**: N (downgraded by the skeptic agent)
+
+<if INCOMPLETE, include:>
+**Remaining blockers**:
+- <blocker from final goal validation that was not resolved>
 
 File updated: <path>
 ```
