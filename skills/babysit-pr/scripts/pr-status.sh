@@ -152,7 +152,7 @@ jq -n \
     copilot: {
       unresolved_count: ($copilot_threads | length),
       latest_review_at: (if $copilot_review_at == "null" then null else $copilot_review_at end),
-      threads: $copilot_threads
+      unresolved_threads: $copilot_threads
     },
     sonar: {
       checks: $sonar_checks,
