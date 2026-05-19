@@ -33,7 +33,7 @@ Parse the JSON output and determine the current state:
 
 ## Poll CI
 
-Use the `/loop` skill (a built-in Claude Code skill that runs a prompt on a recurring interval) to poll for CI completion. Invoke it as `/loop 1m` with the polling logic below. On each iteration, run `pr-status.sh` and check:
+Use the `/loop` skill (a built-in Claude Code skill that runs a prompt on a recurring interval) to poll for CI completion. Invoke it as `/loop 5m` with the polling logic below. On each iteration, run `pr-status.sh` and check:
 
 - If checks are still pending, report which checks are running and wait for the next iteration.
 - If a check has failed, stop the loop and proceed to Fix CI Failures.
@@ -164,7 +164,7 @@ gh api repos/<owner>/<repo>/pulls/<pr>/requested_reviewers -X POST \
 {"reviewers":["copilot-pull-request-reviewer[bot]"]}
 EOF
 ```
-Then use the existing `/loop 1m` poll (same as CI polling) to wait for a new review — check `copilot.latest_review_at` against the push time. Once a new review lands, return to the top of the main loop (re-run `pr-status.sh` and re-assess everything).
+Then use the existing `/loop 5m` poll (same as CI polling) to wait for a new review — check `copilot.latest_review_at` against the push time. Once a new review lands, return to the top of the main loop (re-run `pr-status.sh` and re-assess everything).
 
 **If no code changes were pushed** (all remaining threads were Disagree/Cannot-determine), skip re-requesting Copilot and proceed to Final Check.
 
