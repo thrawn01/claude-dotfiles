@@ -1,11 +1,11 @@
 ---
 name: writing-style
-description: Write or edit prose in the practitioner essay style — experience-backed, opinionated, structured but conversational. Use for blog posts, tech specs, engineering communications, and any long-form writing the user asks for. Activated when the user asks to "write a post", "draft a blog", "write up X", "edit this for style", or invokes /writing-style directly.
+description: Write or edit writing in the practitioner essay style — experience-backed, opinionated, structured but conversational. Use for blog posts, tech specs, engineering communications, and any long-form writing the user asks for. Activated when the user asks to "write a post", "draft a blog", "write up X", "edit this for style", or invokes /writing-style directly.
 ---
 
 # Practitioner Essay Style
 
-All prose produced under this skill follows the practitioner essay style. This style draws authority from production experience, not theory. It is opinionated but fair-minded, conversational but structured, and always grounded in real-world consequences.
+All writing produced under this skill follows the practitioner essay style. This style draws authority from production experience, not theory. It is opinionated but fair-minded, conversational but structured, and always grounded in real-world consequences.
 
 This skill applies to blog posts, tech specs, engineering communications, internal documentation, and any other long-form writing the user requests. Adapt the structure and formality to the medium — a blog post gets full narrative treatment, a tech spec gets the tone and argumentation pattern without the storytelling.
 
@@ -71,6 +71,24 @@ Write with confident informality — conversational but structured, opinionated 
 - Never use "we" to mean the general reader when the writer means "I." Use "I" for personal experience, "we" only when referring to an actual team.
 - Never let a secondary concern become the framing lens. If the post is about testing strategy, frame it through the product and the customer — not through CI status or coverage badges. If the post is about developer workflow, then tooling framing is appropriate. Match the frame to the actual subject.
 
+## Punctuation Preferences
+
+### No colons
+Almost never use `:` in writing. Not for introducing lists, not for setting up a clause after a statement. Restructure the sentence instead.
+
+- Wrong: "They are two phases of the same project: discover the interface, then exploit it."
+- Right: "They are two phases of the same project. Discover the interface, then exploit it."
+- Right: "They are two phases of the same project (discover the interface, then exploit it)."
+
+### No dashes
+Almost never use `-`, `--`, or `—` (em-dash) as punctuation in writing. Instead use semicolons or parenthetical sub-thoughts.
+
+- Wrong: "The spec is simply the cheapest surface — the place where architecture arguments belong."
+- Right: "The spec is simply the cheapest surface; the place where architecture arguments belong."
+- Right: "The spec is simply the cheapest surface (the place where architecture arguments belong)."
+
+Semicolons join two related independent clauses. Parentheticals hold a sub-thought that interrupts the main sentence without derailing it.
+
 ## Rhetorical Devices
 
 Two devices are core to this style. Use them naturally, not mechanically.
@@ -109,8 +127,11 @@ Use blockquotes for two purposes: citing external sources and setting off the wr
 ### Lists for contrast
 When comparing two approaches or philosophies, use parallel bullet lists. This is a signature structural device — two lists side by side that make the contrast visceral.
 
+### Short paragraphs
+Keep paragraphs to 2-3 sentences. Break longer runs of thought into separate paragraphs rather than packing 5-6 sentences into a wall of text. Each paragraph should carry one beat of the argument; when the beat shifts, start a new paragraph. This keeps the pacing quick and the page visually open.
+
 ### Length and pacing
-Sections should be long enough to complete a thought but short enough to maintain momentum. If a section needs more than a few paragraphs, break it into subsections. If a post grows beyond its natural scope, break it into separate posts — acknowledge this directly: "this post has already gone longer than I imagined, so I'm breaking it up."
+Sections should be long enough to complete a thought but short enough to maintain momentum. If a section needs more than a few paragraphs, break it into subsections. If a post grows beyond its natural scope, break it into separate posts.
 
 ## Adapting to Medium
 

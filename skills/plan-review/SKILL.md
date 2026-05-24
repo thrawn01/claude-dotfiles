@@ -59,12 +59,7 @@ The following checklist items apply to Go projects. For non-Go projects, verify 
 - [ ] Prefer one or two word variable names
 - [ ] Inline values directly if variable used only once
 - [ ] Use full words (not abbreviations) for variable names
-- [ ] Use `lo.ToPtr()` for creating pointers to local variables
-
-### Struct Field Formatting (Go)
-- [ ] Order fields by line length (visual tapering)
-- [ ] Longest lines toward top, shorter toward bottom
-- [ ] Creates pleasing diagonal slope for readability
+- [ ] Use `new(expr)` for inline pointers (no `lo.ToPtr()` or temporary variables)
 
 ## Plan Structure Requirements
 

@@ -367,7 +367,9 @@ After applying, tell the user what was auto-applied in a brief summary list, inc
 
 For each finding the fix proposal agent routed as **surface-to-user**, check the finding's verdict to determine presentation style:
 
-**Design-decision findings** (verdict: Upheld or Confirmed) — these have a clear issue and need the user to pick an approach. Before presenting, score the finding against the high-impact trigger criteria in the `deliberate` skill. If the finding is P0 or P1 and 2+ signals fire, run the deliberation protocol — the synthesis replaces the standard options block below. Otherwise, present the fix proposal agent's options:
+**Design-decision findings** (verdict: Upheld or Confirmed) — these have a clear issue and need the user to pick an approach. Before presenting, score the finding against the high-impact trigger criteria in the `deliberate` skill. If the finding is P0 or P1 and 2+ signals fire, run the deliberation protocol — the synthesis replaces the standard options block below. Otherwise, present the fix proposal agent's options using the `AskUserQuestion` tool. Frame the question as "Finding N: <title> (<category>)" with a "Why this matters" explanation in the question text. Place the recommended option first with "(Recommended)" appended to its label. Use the `description` field on each option to explain trade-offs or implications. Always include your reasoning for the recommendation in the question text.
+
+In Claude chat (where `AskUserQuestion` is not available), fall back to a text options block:
 
 ```
 **Finding N: <title>** (<category>)
