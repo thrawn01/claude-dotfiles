@@ -30,7 +30,9 @@ At the start of the discussion, generate the full list of questions needed to pr
 Then work through the questions one at a time. For each question:
 
 - Offer a suggested answer or direction alongside it. The user reacts and refines rather than generating from scratch. "Who are the target users? My read from what you've described is primarily internal ops staff — is that right?" moves faster than an open question.
-- When the question has multiple defensible answers with meaningfully different product implications, first score it against the high-impact trigger criteria in the `deliberate` skill. If 2+ signals fire, pause and ask the user whether to deliberate before recommending. If the user agrees, run the deliberation protocol — the synthesis replaces the standard options block below. If the user declines (or fewer than 2 signals fired), present a numbered options block with one option explicitly flagged as recommended:
+- When the question has multiple defensible answers with meaningfully different product implications, first score it against the high-impact trigger criteria in the `deliberate` skill. If 2+ signals fire, pause and ask the user whether to deliberate before recommending. If the user agrees, run the deliberation protocol — the synthesis replaces the standard options block below. If the user declines (or fewer than 2 signals fired), present the options using the `AskUserQuestion` tool with one option flagged as recommended (append "(Recommended)" to its label). Place the recommended option first. Use the `description` field on each option to explain trade-offs or implications. A bare list of options without a pick is never acceptable — the user came to you for a recommendation, so always include your reasoning in the question text.
+
+    In Claude chat (where `AskUserQuestion` is not available), fall back to a numbered options block in text:
 
     ```
     **Option 1** (recommended) — ...
@@ -39,8 +41,6 @@ Then work through the questions one at a time. For each question:
 
     I recommend Option 1 because <reason>. Pick one or propose another.
     ```
-
-    Numbered options let the user respond "go with 2" without re-typing. A bare list of options without a pick is never acceptable — the user came to you for a recommendation.
 
     The user can also say "deliberate on this" at any point during the discussion to trigger the deliberation protocol for the current question, bypassing trigger scoring.
 - Resolve the question before moving to the next one. Stay on it until it is answered or the user explicitly defers it.
