@@ -27,7 +27,12 @@ Read the PRD before generating any questions. Look for `CONTEXT.md` files in `do
 
 Then list every file in `docs/adr/` and read each title. Read the full ADR for any title that names a topic the feature touches — storage, API patterns, auth, error handling, deployment, and similar cross-cutting concerns. These establish precedent the spec must honor; do not re-open questions an ADR has already settled. If the feature genuinely requires departing from an ADR, that departure is itself a decision that needs a new or superseding ADR. Then scan the relevant areas of the codebase — existing patterns, related modules, the conventions this feature must live inside, and any prior art that suggests how this kind of problem has been solved here before. Questions should interrogate where the feature fits into *this* codebase, not run a generic design checklist.
 
-Generate the full list of technical questions and decisions the spec needs to resolve, present it to the user, then immediately start on the first question. Do not pause to ask whether to reorder, skip, or add items — the user can redirect at any point as items come up, but the default is forward motion. Showing the list gives shape; asking permission to proceed just adds friction. Work through the questions in order, one at a time. Cluster a question with the next one only when the two are so tightly coupled that answering one alone would force re-opening the other (e.g., "which store backs this?" and "what's the key shape?"). Offer a suggested answer or design direction alongside each question. Lean on established codebase patterns and relevant ADRs unless there is a reason to depart — when departing, name the reason and flag the departure as requiring a superseding ADR.
+Generate the full list of technical questions and decisions the spec needs to resolve. Before presenting this list, spawn a sub-agent to triage the questions. The sub-agent receives the full question list along with the PRD, relevant ADRs, CONTEXT.md content, and codebase patterns already gathered. It classifies each question into one of two categories:
+
+- **Auto-resolve** — the answer is obvious, near-certain, or strongly implied by the PRD, existing ADRs, codebase conventions, or standard practice for this stack. The sub-agent provides the answer and a one-line rationale.
+- **Ask the user** — the question involves a genuine architectural choice, a meaningful tradeoff, a policy decision, or anything where reasonable engineers would disagree. These are the questions worth the user's time.
+
+Present the results to the user in a single message with two sections. First, the auto-resolved questions as a compact table or list — question, chosen answer, rationale. Second, the questions that need the user's input, which become the discussion agenda. Do not pause or wait for feedback on the auto-resolved answers — immediately continue into the first user-facing question in the same flow. Work through the user-facing questions in order, one at a time. Cluster a question with the next one only when the two are so tightly coupled that answering one alone would force re-opening the other (e.g., "which store backs this?" and "what's the key shape?"). Offer a suggested answer or design direction alongside each question. Lean on established codebase patterns and relevant ADRs unless there is a reason to depart — when departing, name the reason and flag the departure as requiring a superseding ADR.
 
 When the answer is clear, a plain "I'd suggest X — sound good?" is enough. When the question has multiple defensible approaches with meaningfully different tradeoffs, first score it against the high-impact trigger criteria in the `deliberate` skill. If 2+ signals fire, pause and ask the user whether to deliberate before recommending. If the user agrees, run the deliberation protocol — the synthesis replaces the standard options block below. If the user declines (or fewer than 2 signals fired), present the options using the `AskUserQuestion` tool with one option flagged as recommended (append "(Recommended)" to its label). Place the recommended option first. Use the `description` field on each option to explain trade-offs or implications. A bare list of options without a pick is never acceptable — the user came to you for a recommendation, so always include your reasoning in the question text.
 
@@ -46,6 +51,17 @@ The user can also say "deliberate on this" at any point during the discussion to
 ## What a tech spec covers
 
 Think through the angles that matter for this feature: interfaces and contracts, data, dependencies, failure modes, security, operations (observability, performance, deployment), and whatever else the PRD and codebase demand. Any unresolved technical questions that need a spike or benchmark also belong in the spec as open items. The goal is to surface the decisions an engineer needs before writing code — not to complete a checklist.
+
+### Correctness
+
+If the PRD has a Correctness Constraints section (state invariants and behavioral constraints), the spec must show how the design preserves them. This is the highest-leverage correctness work in the spec.
+
+- **Invariant preservation** — for each state invariant in the PRD, identify every operation that touches the invariant's data and show why it cannot violate the invariant given the design's constraints (transactions, validation order, type system, schema constraints). This is not pseudocode — it is an argument about structural properties of the design.
+- **Making illegal states unrepresentable** — the data model should make PRD-violating states impossible to represent where feasible: non-nullable fields, foreign key constraints, check constraints, state machines with valid transitions only, types that encode the constraint (e.g., `NonEmptyList` instead of `List`). Distinguish between invariants enforced structurally (schema/types reject invalid states) and those enforced by application logic (code must get it right) — the latter need more test coverage.
+- **Behavioral constraint feasibility** — for each behavioral constraint in the PRD ("never hold a lock for more than 100ms"), show how the chosen architecture satisfies it, or flag that the constraint conflicts with the design and needs product resolution via a soft flag.
+- **Contracts at component boundaries** — make assumptions between modules explicit as preconditions and postconditions. What must be true before calling a component (preconditions) and what it guarantees on return (postconditions). This catches the class of bugs where both sides assume the other validates input.
+
+### Testing
 
 Testing follows the `surface-testing` skill methodology. Surface testing prescribes *design* decisions the spec is the right place to lock in — once the component is shaped without these, tests can't recover at write-time. The spec must identify:
 
@@ -119,6 +135,12 @@ _PRD: docs/features/{feature}/prd.md_
 
 ## Data Model
 
+## Correctness
+
+### Invariant Preservation
+
+### Illegal State Analysis
+
 ## API Design
 
 ## Dependencies
@@ -157,19 +179,20 @@ Only link what the reader is guaranteed to have access to — in-repo docs, comm
 
 ## At the end of the discussion
 
-1. Run a testability pass against the `surface-testing` skill. Re-read the Component Design and API Design sections and confirm: every surface named is reachable from a test, every external dependency has a substitute tier chosen, every async behavior has an observable assertion path (downstream effect, fake capture, or exposed observability API), time-dependent behavior routes through an injectable clock, and any in-memory store has a parity-testing model. Gaps here are design findings, not testing findings — resolve them before writing the spec.
-2. Write the spec file (or produce the artifact in chat).
-3. If the discussion resolved or introduced any domain terms, write them to the appropriate `docs/CONTEXT.md` in a single pass alongside the spec. If the file does not exist, create it in the `docs/` directory closest to the code whose domain it describes.
-4. List any soft flags with their count. If three or more, recommend a PRD revision pass.
-5. Review the running decision log. For each decision — apply this checklist. Only offer an ADR if all three are true:
+1. Run a correctness pass. If the PRD has a Correctness Constraints section, re-read the Data Model and Component Design sections and confirm: every state invariant has a preservation argument for each operation that touches it, the data model makes illegal states unrepresentable where feasible (and explicitly notes which invariants rely on application logic), every behavioral constraint is satisfied by the chosen architecture (or soft-flagged as conflicting), and component boundaries have explicit preconditions/postconditions. Gaps here are design findings — resolve them before writing the spec.
+2. Run a testability pass against the `surface-testing` skill. Re-read the Component Design and API Design sections and confirm: every surface named is reachable from a test, every external dependency has a substitute tier chosen, every async behavior has an observable assertion path (downstream effect, fake capture, or exposed observability API), time-dependent behavior routes through an injectable clock, and any in-memory store has a parity-testing model. Gaps here are design findings, not testing findings — resolve them before writing the spec.
+3. Write the spec file (or produce the artifact in chat).
+4. If the discussion resolved or introduced any domain terms, write them to the appropriate `docs/CONTEXT.md` in a single pass alongside the spec. If the file does not exist, create it in the `docs/` directory closest to the code whose domain it describes.
+5. List any soft flags with their count. If three or more, recommend a PRD revision pass.
+6. Review the running decision log. For each decision — apply this checklist. Only offer an ADR if all three are true:
    - **Hard to reverse** — the cost of changing your mind later is meaningful
    - **Surprising without context** — a future reader will wonder "why did they do it this way?"
    - **Result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
 
    If any is missing, skip the ADR; the decision already lives in the spec. Decisions made here — storage choice, API patterns, auth approach, error handling strategy — are strong ADR candidates when they pass the checklist. Decisions resolved through the `deliberate` skill automatically satisfy "Hard to reverse" and "Result of a real trade-off" — only check "Surprising without context." These should already have been offered as ADR candidates immediately after deliberation resolved; do not re-offer them here.
-6. For each decision that passes the checklist, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
-7. Note that the spec is the primary input to `plan-from-context` or `plan-from-prompt` when the user is ready to plan implementation.
-8. Do not commit. The user handles commits.
+7. For each decision that passes the checklist, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
+8. Note that the spec is the primary input to `plan-from-context` or `plan-from-prompt` when the user is ready to plan implementation.
+9. Do not commit. The user handles commits.
 
 ## Revising an existing tech spec
 
