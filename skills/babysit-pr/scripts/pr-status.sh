@@ -2,29 +2,40 @@
 # pr-status.sh — Fetches CI check status and unresolved bot review threads for the current branch's PR.
 # Outputs a single JSON object with all status info.
 #
-# Usage: pr-status.sh [pr-number]
-#   If pr-number is provided, uses that PR. Otherwise auto-detects from current branch.
+# Usage: pr-status.sh [pr-number | pr-url | branch]
+#   If a selector is provided, uses that PR (owner/repo derived from it).
+#   Otherwise auto-detects from the current branch.
 # Requires: gh CLI authenticated
 
 set -euo pipefail
 
-# Derive repo owner/name
-REPO_INFO=$(gh repo view --json owner,name -q '"\(.owner.login)/\(.name)"')
-OWNER=$(echo "$REPO_INFO" | cut -d/ -f1)
-REPO=$(echo "$REPO_INFO" | cut -d/ -f2)
-
-# PR number: use argument if provided, otherwise auto-detect
+# PR selector: number, URL, or branch may be passed as $1; otherwise auto-detect.
+# Fetch the PR including its url so owner/repo can be derived from the PR itself
+# (the URL/number may point at a repo other than the current directory).
+# Always derive PR_NUMBER from the returned .number so downstream consumers
+# (GraphQL query, jq tonumber) get a bare integer regardless of input form.
 if [ -n "${1:-}" ]; then
-  PR_NUMBER="$1"
-  PR_JSON=$(gh pr view "$PR_NUMBER" --json number,headRefName,headRefOid,state 2>/dev/null || echo '{}')
+  PR_JSON=$(gh pr view "$1" --json number,headRefName,headRefOid,state,url 2>/dev/null || echo '{}')
 else
-  PR_JSON=$(gh pr view --json number,headRefName,headRefOid,state 2>/dev/null || echo '{}')
-  PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number // empty')
+  PR_JSON=$(gh pr view --json number,headRefName,headRefOid,state,url 2>/dev/null || echo '{}')
 fi
+PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number // empty')
 
 if [ -z "$PR_NUMBER" ]; then
   echo '{"error": "No PR found for current branch"}' >&2
   exit 1
+fi
+
+# Derive repo owner/name from the PR url (authoritative for which repo the PR
+# lives in), falling back to the current directory's repo.
+PR_URL=$(echo "$PR_JSON" | jq -r '.url // empty')
+if [[ "$PR_URL" =~ github\.com/([^/]+)/([^/]+)/pull/ ]]; then
+  OWNER="${BASH_REMATCH[1]}"
+  REPO="${BASH_REMATCH[2]}"
+else
+  REPO_INFO=$(gh repo view --json owner,name -q '"\(.owner.login)/\(.name)"')
+  OWNER=$(echo "$REPO_INFO" | cut -d/ -f1)
+  REPO=$(echo "$REPO_INFO" | cut -d/ -f2)
 fi
 
 BRANCH=$(echo "$PR_JSON" | jq -r '.headRefName')
@@ -39,7 +50,7 @@ SONAR_CHECKS_FILE=$(mktemp)
 trap 'rm -f "$CHECKS_FILE" "$COPILOT_FILE" "$SONAR_COMMENTS_FILE" "$SONAR_CHECKS_FILE"' EXIT
 
 # CI checks (all checks for the PR)
-(gh pr checks "$PR_NUMBER" --json name,state,link,bucket,startedAt,completedAt \
+(gh pr checks "$PR_NUMBER" --repo "$OWNER/$REPO" --json name,state,link,bucket,startedAt,completedAt \
   2>/dev/null || echo '[]') > "$CHECKS_FILE" &
 
 # Unresolved Copilot review threads via GraphQL (includes submitted_at for stale detection and rateLimit)
