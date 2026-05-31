@@ -16,6 +16,7 @@ This skill runs in both Claude Code and Claude chat. Behavior differs in three p
 | **Writing the PRD** | Write directly to `docs/features/{feature}/prd.md` | Produce as a markdown artifact; tell the user the intended path to place it |
 | **Revising an existing PRD** | Read the file from disk | Ask the user to paste the current PRD into the conversation |
 | **ADR offer at end** | Invoke `adr-write` for approved decisions | Surface ADR-worthy decisions clearly; tell the user to take them into Claude Code and run `adr-write` for each |
+| **Linear ticket + feature dir** | Resolve the id, then create/label/assign or reuse per the shared procedure | Create the Linear issue via MCP if the user supplies the repo; surface the dir + branch names |
 
 If Read, Write, and Edit tools are available in your toolset, you are in Claude Code; otherwise you are in Claude chat. Everything else — the discussion, question list, suggested answers, and running log — is identical in both environments.
 
@@ -61,16 +62,28 @@ Use these domains as the source when generating the initial question list. Not e
 - **Target users or personas.** Who is this for? If multiple, which is primary?
 - **Mental model.** For platform, framework, or tooling products: how should users think about the system? What are the core concepts and their relationships? Often more clarifying than user stories for this type of product.
 - **Core design principles.** The non-negotiable constraints that shape all decisions — what the product will always do, and what it will deliberately never do. Surface these early; they resolve many later questions.
-- **User stories or use cases.** What does the user want to do? "As a X, I want Y, so that Z" works, but any clear narrative does.
+- **Correctness constraints.** Two subsections:
+  - *State invariants* — always-true statements about data ("an account balance is never negative"). For each invariant, specify what violates it and what the system does when violation is attempted or detected. An invariant without an enforcement mechanism is a comment in dead code.
+  - *Behavioral constraints* — things the system must never do, even in failure ("never silently drop a message", "never hold a distributed lock for more than 100ms"). The most valuable behavioral constraints rule out entire implementation approaches before code is written.
+
+  Elicit these with explicit prompts:
+  - **Concurrency**: "What happens when two users interact with the same resource simultaneously?"
+  - **Reversibility**: "Which operations can be undone? Which are permanent?"
+  - **Partial failure**: "What happens if this operation succeeds halfway?"
+- **User stories or use cases.** What does the user want to do? "As a X, I want Y, so that Z" works, but any clear narrative does. Push acceptance criteria toward observable conditions, not intentions. The "Then" clause must be mechanically verifiable — ask "How would a test know this happened?" If the answer requires human judgment, rewrite the criterion. Cover negative cases explicitly for any domain where failure modes matter ("Given a duplicate order is submitted, When the system detects the duplicate, Then...").
 - **Success metrics.** Measures of whether the *PRD was right* — outcomes observable after shipping, such as adoption, latency reduction, incidents avoided, task-completion-time reduction. Never a restatement of the scope list: "the capabilities were built" is execution, not a metric. If no plausible post-ship outcome exists to measure, omit the section rather than filling it. Many framework, tooling, and infrastructure MVPs have nothing to put here, and that is correct.
 - **Scope.** What is in the first version?
 - **Non-goals.** What this feature is deliberately not trying to do. Often more clarifying than scope.
 - **Dependencies and constraints.** External systems, timelines, regulatory or compliance requirements, known technical limits.
 - **Open questions.** Things that still need *product-level* resolution before tech-spec can begin: scope boundaries, user scenarios in/out, outcome thresholds, unresolved dependencies. Do not include questions whose answers would live in an interface signature, a config key, an exit code, or a middleware shape — those are tech-spec open questions and belong there.
 
-## Feature naming
+## Feature naming and the Linear ticket
 
-Infer the `{feature}` slug from the discussion — short, kebab-case, specific. Before writing the file, confirm in one line: "I'll write this to `docs/features/payment-retry/prd.md` — sound right?" Do not ask for the slug at the start; it will be much clearer at the end.
+Infer the `{feature}` slug from the discussion — short, kebab-case, specific. Do not ask for the slug at the start; it will be much clearer at the end.
+
+Before writing the file, resolve the Linear id and name the directory from it, following the shared procedure in `~/.claude/skills/shared/linear-workflow.md` — resolve-or-create the id, assign to `me`, advance to `In Progress` (only if it isn't already started), apply the `repo:` label from the git remote, name the directory `docs/features/<TEAM>-<NUM>-<slug>/`, and echo the `ticket/<TEAM>-<NUM>-<slug>` branch. Throughout this skill, `{feature}` denotes that full `<TEAM>-<NUM>-<slug>` directory name.
+
+Confirm in one line before writing: "I'll track ENG-42 and write this to `docs/features/ENG-42-payment-retry/prd.md`, branch `ticket/ENG-42-payment-retry` — sound right?"
 
 ## Writing the document
 
@@ -86,6 +99,12 @@ A reasonable skeleton:
 ## Users
 
 ## User Stories
+
+## Correctness Constraints
+
+### State Invariants
+
+### Behavioral Constraints
 
 ## Success Metrics
 
@@ -117,15 +136,24 @@ Do not link to other features' PRDs or tech-specs, chat transcripts, Slack threa
 
 ## At the end of the discussion
 
-1. Confirm the file was written with its path.
-2. Review the running decision log. For each decision — product or technical — apply this checklist. Only offer an ADR if all three are true:
+1. Confirm the file was written with its path. Report the Linear issue (id + URL, now In Progress and assigned) and the branch command `git checkout -b ticket/<TEAM>-<NUM>-<slug>`.
+2. Evaluate whether user stories are needed for this feature. Recommend stories when ANY of these are true:
+   - **Multiple user personas with divergent workflows** — the PRD describes distinct roles (e.g., user vs. admin) whose interactions with the feature follow different paths.
+   - **Complex user-facing interactions with branching paths** — multi-step flows, approval chains, wizards, or workflows where user decisions change what happens next.
+   - **Large PRD-to-test gap** — the PRD has many discrete behaviors to verify and no single engineer would hold them all in their head. Stories become the unit of "done."
+   - **Team coordination** — multiple engineers will work on the feature in parallel and need clear work-unit boundaries.
+
+   Do NOT recommend stories when the feature is infrastructure/platform/library work (the "user" is another system or API consumer), when the PRD's correctness constraints and acceptance criteria are already at story granularity, when the feature is simple (single CRUD surface, config flag, small behavioral change), or when a solo developer holds the full context.
+
+   If stories are recommended, say so with a brief reason: "This feature has divergent admin and user workflows — I'd recommend writing user stories before the tech spec. You can generate them with a stories-create session or write them manually, then validate with `/stories-review`." If stories are not needed, say so: "This PRD's acceptance criteria are precise enough to go straight to the tech spec — user stories would just restate what's here."
+3. Review the running decision log. For each decision — product or technical — apply this checklist. Only offer an ADR if all three are true:
    - **Hard to reverse** — the cost of changing your mind later is meaningful
    - **Surprising without context** — a future reader will wonder "why did they do it this way?"
    - **Result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
 
    If any is missing, skip the ADR; the decision already lives in the PRD. Core design principles surfaced during the discussion are strong ADR candidates — they are often the most significant decisions made and the easiest to lose. Decisions resolved through the `deliberate` skill automatically satisfy "Hard to reverse" and "Result of a real trade-off" — only check "Surprising without context." These should already have been offered as ADR candidates immediately after deliberation resolved; do not re-offer them here.
-3. For each decision that passes the checklist, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
-4. Do not commit. The user handles commits.
+4. For each decision that passes the checklist, offer to capture it as an ADR: "This looks ADR-worthy — want me to record it?" Invoke `adr-write` for the ones the user approves.
+5. Do not commit. The user handles commits.
 
 ## Revising an existing PRD
 

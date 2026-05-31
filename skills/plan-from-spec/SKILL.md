@@ -402,7 +402,7 @@ Spawn a spec-coverage validation agent using the Task tool (subagent_type: "gene
 ```
 Read the source spec/PRD at [spec path] and the implementation plan at plans/[filename].md.
 
-Produce a traceability report with three sections:
+Produce a traceability report with four sections:
 
 1. UNCOVERED REQUIREMENTS: List every requirement, acceptance criterion, or stated behavior
    in the spec that has no corresponding phase or task in the plan. Be specific — quote
@@ -413,6 +413,17 @@ Produce a traceability report with three sections:
 
 3. CONFLICTS: List any place where the plan's approach contradicts a decision or constraint
    stated in the spec.
+
+4. CORRECTNESS TRACEABILITY: If the spec has a Correctness section (invariant preservation
+   arguments, illegal state analysis, behavioral constraints), check:
+   - Every invariant preservation argument in the spec maps to at least one test in the plan
+     that attempts to violate the invariant through the surface and verifies the system
+     rejects the operation.
+   - Every behavioral constraint maps to at least one test that verifies enforcement.
+   - Every component boundary with explicit preconditions/postconditions maps to at least
+     one test that exercises the boundary contract.
+   List any correctness arguments or constraints that have no corresponding test in the plan.
+   If the spec has no Correctness section, report "N/A — spec has no correctness constraints."
 
 Be thorough. A missed requirement here means it won't get built.
 ```

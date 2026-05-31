@@ -551,6 +551,78 @@ Surface tests boot the full application, so internal components are integrating 
 
 **Internal library boundaries** sit at the intersection of both: a domain-complete package within the codebase defines its own surface and warrants its own surface tests, independent of the systems that consume it. When integration tests wire two components together, an internal library boundary is where you draw the line — it is a first-class surface, not an internal seam to cut through.
 
+## Correctness-Derived Tests
+
+Surface testing defines *how* to test (through the surface, with real fakes). This section defines *what* to test when the PRD and tech spec include correctness constraints. These tests are derived from the spec's correctness section and prove that the implementation preserves what the design promised.
+
+### Invariant Violation Tests
+
+For each state invariant in the spec, write a test that attempts to violate it through the surface and verifies the system rejects the operation.
+
+```go
+func TestTransferRejectsNegativeBalance(t *testing.T) {
+    server := api.NewServer(api.ServerOptions{})
+    go server.Start("localhost:0")
+    defer server.Shutdown()
+
+    // Given: an account with balance 100
+    createAccount(t, server, "acct-1", 100)
+
+    // When: attempting a transfer that would make the balance negative
+    resp, err := http.Post(server.URL()+"/transfers", "application/json",
+        strings.NewReader(`{"from":"acct-1","to":"acct-2","amount":150}`))
+    require.NoError(t, err)
+
+    // Then: the transfer is rejected and the balance is unchanged
+    assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
+    assert.Equal(t, 100, getBalance(t, server, "acct-1"))
+}
+```
+
+The spec says "Transfer preserves the non-negative-balance invariant because it checks balance atomically." This test proves that argument holds in the actual implementation. One test per invariant per operation that touches it.
+
+### Behavioral Constraint Tests
+
+For each behavioral constraint, write a test that verifies enforcement — often by injecting a fault at a dependency boundary and observing how the system responds.
+
+```go
+func TestMessageNeverSilentlyDropped(t *testing.T) {
+    fakeBroker := &FakeEventBroker{FailNext: true}
+    server := api.NewServer(api.ServerOptions{EventBroker: fakeBroker})
+    go server.Start("localhost:0")
+    defer server.Shutdown()
+
+    // When: submitting an order while the broker is failing
+    resp, err := http.Post(server.URL()+"/orders", "application/json",
+        strings.NewReader(`{"item":"widget"}`))
+    require.NoError(t, err)
+
+    // Then: the system surfaces the failure rather than silently dropping
+    assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+}
+```
+
+### Boundary Contract Tests
+
+For each component boundary with explicit preconditions/postconditions in the spec, write a test that violates a precondition and verifies the violation is rejected cleanly.
+
+```go
+func TestUnauthenticatedRequestRejected(t *testing.T) {
+    server := api.NewServer(api.ServerOptions{})
+    go server.Start("localhost:0")
+    defer server.Shutdown()
+
+    // When: calling a protected endpoint without authentication (violating precondition)
+    resp, err := http.Get(server.URL() + "/admin/users")
+    require.NoError(t, err)
+
+    // Then: the precondition violation is rejected with a clear error
+    assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+```
+
+These three test categories are not exhaustive — they supplement the feature's functional tests. The goal is to prove the spec's correctness arguments hold in the implementation, not to replace scenario-based testing.
+
 ## Key Principles
 
 1. **Test behavior through the surface** (including internal library boundaries, which define their own surface): Tests act as end-users and verify what the system does, not how. If a test needs internal access, the design is wrong — fix the design (expose observability), not the test strategy. Only behavior changes should break tests.

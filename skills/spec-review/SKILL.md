@@ -152,12 +152,18 @@ FINDING CATEGORIES (use exactly these labels):
 8. **Missing testing surface** — No testable entry point; external dependency without a substitute; async behavior with no observable assertion path; time coupling without an injected clock; in-memory store without a parity-testing model. Only file this if the PRD or user stories require the behavior to be tested AND the spec provides no way to observe it. Do not invent testing requirements the PRD doesn't establish.
 9. **Missing failure mode** — Error handling, rollback, or degradation behavior is not specified for a path that the PRD or user stories explicitly require to be handled gracefully. Do not flag failure modes for paths the spec intentionally leaves to infrastructure defaults or standard error propagation.
 10. **Implementation leakage** — Content in the spec that belongs in code: function bodies, full SQL statements, rendered config, pinned versions, internal-only log text, test bodies, directory trees. Signatures, type definitions, schema, and externally-visible text stay.
+11. **Missing invariant preservation** — The PRD defines a state invariant but the spec does not show how operations that touch the invariant's data preserve it. The spec defines an operation that modifies the invariant's data (e.g., a Transfer operation touching account balances) but does not argue why the operation cannot violate the invariant (e.g., atomicity, validation order, schema constraints). Only file when the PRD has an explicit Correctness Constraints section with state invariants. Do not invent invariants the PRD didn't state.
+12. **Representable illegal state** — The data model permits a state that a PRD invariant forbids. The schema can represent an empty order when the PRD says orders always have at least one item. The distinction matters: some invariants can be enforced structurally (schema, types) and some require application logic — but the spec should explicitly acknowledge which is which. Only file when a structural enforcement is clearly feasible and the spec doesn't use it or explain why not.
+13. **Infeasible behavioral constraint** — The PRD defines a behavioral constraint that the spec's chosen architecture cannot enforce, or the spec doesn't show how it satisfies the constraint. Example: the PRD says "never hold a distributed lock for more than 100ms" but the spec's design requires holding locks across async operations. Only file when the PRD has an explicit behavioral constraint in its Correctness Constraints section.
 
 EVIDENCE RULES — every finding MUST include evidence:
 - For Gaps: name the topic, state which section headings you searched, confirm it was not addressed.
 - For Inconsistencies, Ambiguities, Drift, Implementation leakage: quote the problematic passage(s).
 - For Stale soft flags: quote the marker verbatim AND quote the passage that answers it.
 - For Unresolved soft flags: quote the marker verbatim, state you checked spec and PRD for an answer.
+- For Missing invariant preservation: name the PRD invariant, name the operation(s) that touch its data, confirm the spec does not argue why those operations preserve the invariant.
+- For Representable illegal states: name the PRD invariant, quote the data model definition that permits the violating state, explain what structural enforcement is feasible (schema constraint, type, foreign key).
+- For Infeasible behavioral constraints: quote the PRD behavioral constraint, quote the spec's architectural choice that conflicts with it, explain why the constraint cannot be satisfied.
 - If you cannot produce evidence, do not file the finding.
 
 IMPORTANT RULES:
@@ -452,6 +458,8 @@ Evaluate the spec against these criteria:
 
 4. **PRD coverage** — Does the spec address every requirement in the PRD that needs a technical decision? (Not every PRD bullet needs spec coverage — only those that require architectural or contract decisions.) If yes, this criterion passes.
 
+5. **Correctness preservation** — If the PRD has a Correctness Constraints section: does the spec show how each state invariant is preserved by the operations that touch it? Does the data model make illegal states unrepresentable where feasible? Does the architecture satisfy each behavioral constraint? If the PRD has no Correctness Constraints section, this criterion auto-passes. This criterion does NOT require exhaustive formal proofs — it requires that an engineer reading the spec can see why the design preserves each invariant without having to figure it out themselves.
+
 IMPORTANT RULES:
 - A spec does NOT need to be exhaustive to pass. It needs to be unambiguous on contracts and decisions.
 - Missing implementation details are NOT blockers. Engineers resolve those during the build.
@@ -468,6 +476,7 @@ Respond in this format:
 2. Contradictions: PASS/FAIL — <one sentence>
 3. Decisions: PASS/FAIL — <one sentence>
 4. PRD coverage: PASS/FAIL — <one sentence>
+5. Correctness: PASS/FAIL/N/A — <one sentence>
 
 <if FAIL, include:>
 **Blockers** (ONLY list items that would cause an engineer to get stuck):

@@ -18,10 +18,13 @@ Read the PRD for the feature, run a back-and-forth technical design discussion, 
 | **Writing the spec** | Write to `docs/features/{feature}/tech-spec.md` | Produce as markdown artifact; tell user the intended path |
 | **Revising an existing spec** | Read from disk | Ask user to paste |
 | **ADR offer at end** | Invoke `adr-write` for approved decisions | Surface decisions clearly; user takes them to Claude Code |
+| **Linear ticket + feature dir** | Resolve the id from the existing dir/branch (or create) per the shared procedure | Reuse the supplied id, or surface the intended dir + branch names |
 
 If Read, Write, and Edit tools are available in your toolset, you are in Claude Code; otherwise you are in Claude chat.
 
 ## Starting the discussion
+
+Before reading the PRD, resolve the feature's Linear id and directory per the shared procedure in `~/.claude/skills/shared/linear-workflow.md`. Usually `prd-create` already created the issue and the `docs/features/<TEAM>-<NUM>-<slug>/` directory, so derive the id from that directory name or the current `ticket/<TEAM>-<NUM>-<slug>` branch and reuse it (advance its status to `In Progress` if still in Backlog/Todo; assign `me` if unassigned; never duplicate). If you are going straight to a tech spec with no prior PRD, the procedure creates the issue. Throughout this skill, `{feature}` denotes the `<TEAM>-<NUM>-<slug>` directory name.
 
 Read the PRD before generating any questions. Look for `CONTEXT.md` files in `docs/` directories relevant to the feature (see the CONTEXT-FORMAT.md in the prd-create skill for location rules). Read any that exist once and hold them in memory for the session. Use them to ensure the spec's terminology — component names, data model terms, API naming — is consistent with the domain glossary.
 
@@ -181,7 +184,7 @@ Only link what the reader is guaranteed to have access to — in-repo docs, comm
 
 1. Run a correctness pass. If the PRD has a Correctness Constraints section, re-read the Data Model and Component Design sections and confirm: every state invariant has a preservation argument for each operation that touches it, the data model makes illegal states unrepresentable where feasible (and explicitly notes which invariants rely on application logic), every behavioral constraint is satisfied by the chosen architecture (or soft-flagged as conflicting), and component boundaries have explicit preconditions/postconditions. Gaps here are design findings — resolve them before writing the spec.
 2. Run a testability pass against the `surface-testing` skill. Re-read the Component Design and API Design sections and confirm: every surface named is reachable from a test, every external dependency has a substitute tier chosen, every async behavior has an observable assertion path (downstream effect, fake capture, or exposed observability API), time-dependent behavior routes through an injectable clock, and any in-memory store has a parity-testing model. Gaps here are design findings, not testing findings — resolve them before writing the spec.
-3. Write the spec file (or produce the artifact in chat).
+3. Write the spec file (or produce the artifact in chat). Confirm the path, and report the Linear issue (id + URL, In Progress, assigned) and the branch command `git checkout -b ticket/<TEAM>-<NUM>-<slug>`.
 4. If the discussion resolved or introduced any domain terms, write them to the appropriate `docs/CONTEXT.md` in a single pass alongside the spec. If the file does not exist, create it in the `docs/` directory closest to the code whose domain it describes.
 5. List any soft flags with their count. If three or more, recommend a PRD revision pass.
 6. Present the complete decision log — auto-resolved answers from triage and decisions made during the discussion — as a single consolidated list. This is the user's first view of the auto-resolved answers; they can override any before the spec is written. Then, for each decision, apply this checklist. Only offer an ADR if all three are true:

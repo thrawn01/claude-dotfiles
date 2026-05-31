@@ -68,8 +68,8 @@ For each finding, use this format:
 **Suggested fix**: <concrete suggested change>
 
 SEVERITY DEFINITIONS:
-- **Major**: An engineer would build the wrong thing, skip a required workflow, or violate a PRD constraint. Includes: incorrect behavior, missing stories for core workflows, contradictions with PRD requirements.
-- **Medium**: An engineer could probably figure it out, but the story is incomplete or unclear enough to cause confusion or inconsistency. Includes: missing acceptance criteria for PRD-specified behavior, ambiguous wording where the PRD is clear, scope issues that mix distinct flows.
+- **Major**: An engineer would build the wrong thing, skip a required workflow, or violate a PRD constraint. Includes: incorrect behavior, missing stories for core workflows, contradictions with PRD requirements, invariant violations, missing correctness stories for critical invariants.
+- **Medium**: An engineer could probably figure it out, but the story is incomplete or unclear enough to cause confusion or inconsistency. Includes: missing acceptance criteria for PRD-specified behavior, ambiguous wording where the PRD is clear, scope issues that mix distinct flows, unverifiable acceptance criteria.
 
 Do NOT file findings below Medium severity. Minor wording preferences, style issues, and nitpicks should be omitted entirely.
 
@@ -80,6 +80,13 @@ FINDING CATEGORIES (use exactly these labels):
 3. **Missing acceptance criterion** — A story exists but is missing a testable acceptance criterion for behavior the PRD specifies.
 4. **Scope issue** — A story is too broad (epic) or too narrow (task), or mixes distinct flows.
 5. **Ambiguous** — A story or criterion could be interpreted multiple ways; the PRD is clear but the story is not.
+6. **Invariant violation** — A story's workflow or acceptance criteria would permit a state that violates a PRD state invariant, or two stories are individually correct but their combined effect violates an invariant. Only file when the PRD has an explicit Correctness Constraints section with state invariants.
+7. **Missing correctness story** — The PRD has a state invariant or behavioral constraint in its Correctness Constraints section but no story describes what happens when the constraint is tested (e.g., no story for "transfer rejected when insufficient balance" when the PRD says "balance is never negative"). Only file when the PRD has an explicit Correctness Constraints section.
+8. **Unverifiable criterion** — An acceptance criterion is stated as an intention rather than an observable condition. The "Then" clause cannot be mechanically verified by a test (e.g., "Then the user feels confident" or "Then the order is processed"). Rewrite to specify the observable system behavior. NOTE: If a story has criteria but they are theater (unverifiable), file under category 8, not category 3. Category 3 is for absent criteria only — the criterion literally does not exist. Category 8 is for present but unverifiable criteria.
+
+CATEGORY DISAMBIGUATION — invariant-related findings:
+- If no story addresses a correctness constraint at all → file category 7 (Missing correctness story).
+- If a story exists but its acceptance criteria would permit a state that violates an invariant → file category 6 (Invariant violation).
 
 IMPORTANT RULES:
 - Every finding MUST cite specific PRD text. If you cannot quote a PRD passage that supports the finding, do not file it.
@@ -91,6 +98,9 @@ IMPORTANT RULES:
 - Use the CONTEXT.md domain glossary (if provided) to verify terminology is used correctly and consistently across stories. Flag findings where stories use terms that contradict or diverge from the glossary definitions.
 - If a finding involves an architectural constraint (e.g., polling vs webhooks, read-only access, deployment model), read the relevant ADR file to verify whether the story aligns with the recorded decision before filing the finding.
 - If this is iteration 2+, do NOT re-file findings that match fixes already applied. Focus on new issues or issues introduced by previous fixes.
+- For Invariant violation findings: check whether two or more stories, when their workflows are combined, could produce a state that violates a PRD state invariant. Also check individual stories whose acceptance criteria permit an invariant-violating state.
+- For Missing correctness story findings: only file when the PRD has an explicit Correctness Constraints section. Check each state invariant and behavioral constraint — does at least one story describe the system's behavior when the constraint is tested? Do not require a story for invariants that are purely structural (enforced by schema/types with no user-visible behavior).
+- For Unverifiable criterion findings: apply the test "How would a test know this happened?" If the answer requires human judgment or subjective evaluation, file the finding. Do not flag criteria that are observable but imprecise (e.g., "within 30 seconds" is verifiable even if the threshold is debatable).
 ```
 
 Read the user stories, PRD, and CONTEXT.md (if found) yourself and include their full contents in the sub-agent prompt so it has everything in context. Do NOT include ADR contents — only pass the file list so the agent can read them on demand.
@@ -124,6 +134,11 @@ RULES FOR REJECTION:
 - If the finding recommends changing actor/persona labels but the PRD uses the same labels, reject it.
 - If the finding involves an architectural constraint, read the relevant ADR file before confirming or rejecting.
 - If the finding flags a terminology issue, check the CONTEXT.md glossary (if provided) before confirming or rejecting.
+
+RULES FOR NEW CATEGORIES:
+- For Invariant violation (category 6): verify the PRD actually states the invariant cited. Read the story's acceptance criteria literally — does the criteria explicitly permit a violating state, or does the finding assume a violation that the criteria are silent on? Silence is not permission; only confirm if the criteria actively describe a state that violates the invariant.
+- For Missing correctness story (category 7): verify the PRD's Correctness Constraints section actually contains the cited invariant or constraint. Check whether ANY story in the file addresses the constraint, not just the section the finding cites. If a workflow story's acceptance criteria already cover the constraint's rejection behavior, reject the finding. Do not reject just because "broader language encompasses" the constraint — the constraint's enforcement behavior must be explicitly present as an acceptance criterion.
+- For Unverifiable criterion (category 8): verify the criterion is truly unverifiable, not merely imprecise. "Within 30 seconds" is verifiable. "Successfully" is verifiable if the success condition is defined elsewhere in the story. "Feels confident" is unverifiable. Do not confuse category 8 with category 3 — if the criterion exists but is theater, confirm as category 8.
 
 FINDINGS TO ASSESS:
 <paste all findings from Phase 1>
@@ -161,6 +176,11 @@ SKEPTIC RULES:
 - If the suggested fix would add redundant information already implied by existing criteria, downgrade it.
 - If the finding's severity seems inflated (labeled Major but an engineer would likely get it right anyway from context), downgrade to clarification or false positive.
 - Be aggressive but honest — if the finding is genuinely correct, uphold it. Do not downgrade valid findings just to reduce the count.
+
+SKEPTIC RULES FOR NEW CATEGORIES:
+- For Invariant violation (category 6): try to argue that the story's criteria, when read charitably, do not actually permit the violating state. If the criteria are silent on the invariant (neither permitting nor preventing violation), downgrade — silence is a gap (category 7), not an active violation (category 6).
+- For Missing correctness story (category 7): try to find an existing story whose acceptance criteria explicitly address the constraint's enforcement behavior. "Broader language" is NOT sufficient — the constraint's rejection/enforcement must be an explicit criterion, not an implication. If you cannot find an explicit criterion, uphold the finding.
+- For Unverifiable criterion (category 8): try to argue that the criterion IS verifiable — perhaps the observable condition is implied by context elsewhere in the story. If you can name a specific, concrete assertion a test could make based on the criterion, downgrade it. If not, uphold it.
 
 CONFIRMED FINDINGS TO CHALLENGE:
 <paste only confirmed findings from Phase 2, including the validation agent's confirmation reasoning>

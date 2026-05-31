@@ -143,6 +143,7 @@ FINDING CATEGORIES (use exactly these labels):
 6. **Scope ambiguity** — Requirements that could be interpreted multiple ways by an engineer — anything that would force a judgment call during tech spec or implementation that should have been a product decision.
 7. **Implicit assumption** — Something that requires context from outside the document to understand. If it requires memory of the original discussion, it needs to be written down.
 8. **Unresolved open question** — Questions listed in the Open Questions section without answers, or questions implicit in the text that were never surfaced. Filter out anything whose answer lives in an interface signature, a config key, an exit code, or a middleware shape — those are tech-spec questions and belong there. PRD open questions concern users, scope, scenarios, and outcomes.
+9. **Correctness gap** — A requirement that is present and internally consistent but too imprecise for an engineer to write a test without making a product decision. Flag when: a user story's acceptance criteria are stated as intentions rather than observable conditions ("the system handles errors gracefully"); the domain clearly has state invariants but none are specified; behavioral constraints (what must never happen, even in failure) are absent where failure modes are non-obvious; concurrency, reversibility, or partial-failure behavior is unaddressed for operations where it matters. **Threshold**: only flag where the domain clearly has a deterministic answer the PRD is hiding — not where the PRD is appropriately deferring detail to the tech spec. "Users can filter search results" is appropriate abstraction; "the system processes orders correctly" is a correctness gap. Distinguish between missing information that must be elicited (someone knows the answer) and genuinely undefined behavior that is a product decision not yet made.
 
 EVIDENCE RULES — every finding MUST include evidence:
 - For Gaps: name the topic, state which section headings you searched, confirm it was not addressed.
@@ -151,6 +152,7 @@ EVIDENCE RULES — every finding MUST include evidence:
 - For ADR conflicts: quote the PRD passage and name the ADR that constrains it.
 - For Unresolved handoff items: quote the entry verbatim, state you checked the PRD for an answer.
 - For Unresolved open questions: quote the question or identify the implicit question and the section it arises in.
+- For Correctness gaps: quote the imprecise requirement, explain what product decision an engineer would be forced to make, and state whether the gap is missing information (someone knows the answer) or undefined behavior (a product decision not yet made).
 - If you cannot produce evidence, do not file the finding.
 
 IMPORTANT RULES:

@@ -54,6 +54,16 @@ Before starting implementation, read the project's CLAUDE.md file (if one exists
 - Do NOT include emoji or attribution links
 - Do NOT commit - the orchestrator handles all commits
 
+## Correctness Verification
+
+If the plan references a tech spec with a Correctness section (invariant preservation, illegal state analysis, behavioral constraints), perform a lightweight check after implementing:
+
+1. **Invariant guards** — if this phase's code touches data governed by a state invariant, verify the implementation includes the guard described in the spec's preservation argument. The spec says "Transfer checks balance atomically before debiting" — does the implemented Transfer do that?
+2. **Correctness tests** — if the plan includes invariant violation tests, behavioral constraint tests, or boundary contract tests for this phase, verify they were actually written and exercise the right behavior.
+3. **Structural enforcement** — if the spec says the data model makes certain illegal states unrepresentable (non-nullable fields, check constraints, state machine transitions), verify the implementation uses those structural guards rather than relying solely on application logic.
+
+This is not a full review — it's a quick check that the implementation matches what the spec promised. If something doesn't match, report it in the completion report.
+
 ## Verification Steps
 
 After implementing the phase:
@@ -93,6 +103,11 @@ Changes made:
 Verification results:
 ✓ [Test/check that passed]
 ✓ [Another test that passed]
+
+Correctness checks:
+✓/✗ [Invariant guard result, or "N/A — no correctness constraints"]
+✓/✗ [Correctness test result]
+✓/✗ [Structural enforcement result]
 
 Files created/modified:
 - [File paths]
