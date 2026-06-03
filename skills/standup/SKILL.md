@@ -65,11 +65,14 @@ echo "window: $SINCE .. $NOW"
 
 **Enrichment sources — degrade to a warning, never abort** (Behavioral Constraint 3):
 
-- **Linear** (soft). Discover via the Linear MCP `list_issues(assignee="me", updatedAt>=since)`;
-  for each discovered issue, enrich title/status (and `get_issue`/`list_comments` as needed).
-  Normalize to `CONTRACT.md §3` and write `$RUN/linear.json`:
-  `{ "issues": [ {domId,title,status,url,updatedAt} ] }`. If Linear is unreachable or auth
-  fails, print a warning and write `{ "issues": [] }` and continue.
+- **Linear** (soft). Discover via the Linear MCP `list_issues(assignee="me", updatedAt>=linear_since)`
+  where `linear_since` is the **start of the current calendar day** (i.e. `NOW` truncated to
+  `YYYY-MM-DDT00:00:00Z`), NOT `$SINCE`. Using start-of-day ensures work completed or updated
+  earlier in the day (before `$SINCE`) is always captured — e.g. a ticket closed at 01:00 when
+  the standup window starts at 07:00. For each discovered issue, enrich title/status (and
+  `get_issue`/`list_comments` as needed). Normalize to `CONTRACT.md §3` and write
+  `$RUN/linear.json`: `{ "issues": [ {domId,title,status,url,updatedAt} ] }`. If Linear is
+  unreachable or auth fails, print a warning and write `{ "issues": [] }` and continue.
 - **Notes** (soft). Read dated files under `~/Notes` within the window
   (`~/Notes/<YYYY-MM>/<YYYY-MM-DD>.md`). Write `$RUN/notes.json` =
   `{ "notes": [ {date,text} ] }`; empty array if none (silent).
