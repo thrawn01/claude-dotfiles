@@ -1,0 +1,25 @@
+{
+  "issues": [
+    {
+      "domId": "DOM-1608",
+      "title": "golangci-lint shards failing in CI",
+      "status": "Done",
+      "url": "https://linear.app/anchorage/issue/DOM-1608",
+      "updatedAt": "2026-06-02T14:35:00Z"
+    },
+    {
+      "domId": "DOM-1597",
+      "title": "custody migration",
+      "status": "In Review",
+      "url": "https://linear.app/anchorage/issue/DOM-1597",
+      "updatedAt": "2026-06-02T13:05:00Z"
+    },
+    {
+      "domId": "DOM-1900",
+      "title": "investigate flaky offchain test",
+      "status": "In Progress",
+      "url": "https://linear.app/anchorage/issue/DOM-1900",
+      "updatedAt": "2026-06-02T17:00:00Z"
+    }
+  ]
+}
