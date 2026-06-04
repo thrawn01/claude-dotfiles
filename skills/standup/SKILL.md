@@ -98,10 +98,39 @@ python3 "$SK/scripts/merge.py" \
 ## 4. Narrate — read ONLY `buckets.json`
 
 Read `$RUN/buckets.json` (never raw logs). For each ticket bucket, and for the `otherPRs`
-and `notes` groups, write **one** grounded, first-person, past-tense line that is derivable
-**solely** from the facts in that bucket — never invent work (Behavioral Constraint 1). Add
-each line as a `summary` field (and `otherPRsSummary` / `notesSummary` for the two groups),
-changing nothing else, and write the result to `$RUN/narrated.json`.
+and `notes` groups, write **one** grounded, first-person, past-tense line and add it as a
+`summary` field (and `otherPRsSummary` / `notesSummary` for the two groups), changing nothing
+else, then write the result to `$RUN/narrated.json`.
+
+**Voice — a standup, not a changelog.** The line says *what you worked on, how it went, and
+where it landed* — the arc of the effort — NOT a compressed list of what changed. Git already
+has the commit log; do not restate it. Aim for the altitude of something you'd say out loud:
+"Spent the session getting the custody migration green" / "Shipped the DWARF strip and moved
+on to review comments" / "Still wrestling CI on the verify-generate fan-out."
+
+**Infer the arc from signals in the bucket — never fabricate (Behavioral Constraint 1).** The
+tone must be *derivable* from the facts present, not invented:
+- Many `fix:` / `address review` / `Copilot` / revert-style commit subjects, or a high
+  `ciEvents.failCount` → the work was a grind: "spent the day getting X green", "ran into
+  repeated CI failures on X", "chased down daggerWatcherTest breakage".
+- A single feature commit (or few) with a **merged** PR → a clean ship: "shipped X".
+- An **open** / **in review** PR → in flight: "got X up for review", "still iterating on X".
+- A no-PR bucket carrying `humanTurns` → investigation/design, not code: "dug into how X is
+  wired", "reviewed the ADR for X", "scoped X".
+- A Linear-only bucket (no PR, no commits, no turns) → tracking: "opened/filed X", or reflect
+  its status ("closed out X").
+
+Name the *concrete thing* the effort was about (the subsystem, the failure, the goal) so the
+line is specific, but pull that from the commit subjects / turns / titles; do not enumerate
+them as a list. One sentence. If genuinely nothing but a status change happened, a short line
+is correct, so don't pad it.
+
+**No dashes anywhere in the report.** Em-dashes (`—`), en-dashes (`–`), and the spaced hyphen
+clause break (` - `) are banned from all prose. Join clauses with `;` or `,`, or set an aside
+in parentheses `(` `)`, instead. Write the summaries this way directly — the formatter also
+strips any dash that slips through (rewriting it to `; `), but a mechanically patched line
+reads worse than one you punctuated correctly in the first place. (Hyphens inside identifiers
+and URLs like `DOM-1546` are fine — they are not clause-break punctuation.)
 
 ## 5. Deliver — write report, set clipboard, THEN advance `.standup-last-run`
 

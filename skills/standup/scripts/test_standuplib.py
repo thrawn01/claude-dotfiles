@@ -204,12 +204,20 @@ class FormatRangeTest(unittest.TestCase):
     def test_dom1608_bold_line(self):
         self.assertIn(
             "**[DOM-1608](https://linear.app/anchorage/issue/DOM-1608) · "
-            "golangci-lint shards** — Done",
+            "golangci-lint shards** (Done)",
             self.out,
         )
 
     def test_dom1608_ci_sub_bullet(self):
-        self.assertIn("  - CI: golangci-lint failed 3× before passing.", self.out)
+        self.assertIn("  - CI: golangci-lint failed 3× before passing", self.out)
+
+    def test_commit_subjects_never_enumerated(self):
+        # Commits inform the summary only; raw subjects must never be rendered.
+        self.assertNotIn("  - commit:", self.out)
+
+    def test_dom1597_commit_count_collapsed(self):
+        # 2 commits, no CI → a single collapsed stats line, not per-commit bullets.
+        self.assertIn("  - 2 commits", self.out)
 
     def test_dom1608_pr_sub_bullet(self):
         self.assertIn(
@@ -221,7 +229,7 @@ class FormatRangeTest(unittest.TestCase):
     def test_dom1597_group_present(self):
         self.assertIn(
             "**[DOM-1597](https://linear.app/anchorage/issue/DOM-1597) · "
-            "custody migration** — In Review",
+            "custody migration** (In Review)",
             self.out,
         )
 
@@ -230,6 +238,34 @@ class FormatRangeTest(unittest.TestCase):
 
     def test_meetings_notes_group_header(self):
         self.assertIn("**Meetings / Notes**", self.out)
+
+    def test_no_punctuation_dashes_anywhere(self):
+        # Em/en dashes are banned report-wide; status sits in parens, not after a dash.
+        self.assertNotIn("—", self.out)
+        self.assertNotIn("–", self.out)
+        # No spaced-hyphen clause break (the markdown bullet marker is "  - " at line
+        # start, which is not a clause break between two words).
+        for line in self.out.splitlines():
+            body = line.lstrip()
+            if body.startswith("- "):
+                body = body[2:]
+            self.assertNotIn(" - ", body, "stray dash clause break: %r" % line)
+
+
+class NoDashesTest(unittest.TestCase):
+    def test_em_and_en_dash_become_semicolon(self):
+        from standuplib import _no_dashes
+        self.assertEqual(_no_dashes("got it green — mostly CI"), "got it green; mostly CI")
+        self.assertEqual(_no_dashes("a–b"), "a; b")
+
+    def test_spaced_hyphen_clause_break_rewritten(self):
+        from standuplib import _no_dashes
+        self.assertEqual(_no_dashes("shipped X - moved on"), "shipped X; moved on")
+
+    def test_identifiers_and_urls_preserved(self):
+        from standuplib import _no_dashes
+        self.assertEqual(_no_dashes("fixed DOM-1546 verify-generate"),
+                         "fixed DOM-1546 verify-generate")
 
 
 class FormatReportTest(unittest.TestCase):

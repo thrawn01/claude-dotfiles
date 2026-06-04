@@ -20,6 +20,22 @@ MAX_CHARS_PER_TURN = 280
 
 _DOM_RE = re.compile(r"dom-(\d+)", re.IGNORECASE)
 
+# Punctuation dashes are banned from rendered prose (report + clipboard): only
+# ';' ',' '(' ')' may join clauses. This matches an em/en dash (spaced or not) or a
+# space-padded ASCII hyphen used as a clause break, and rewrites it to "; ". Hyphens
+# inside identifiers and URLs (DOM-1546, kebab branch names) and the leading markdown
+# bullet marker are NOT space-padded clause breaks, so they are left untouched.
+_PUNCT_DASH_RE = re.compile(r"\s*[—–]\s*|(?<=\S) - (?=\S)")
+
+
+def _no_dashes(text):
+    """Strip punctuation dashes from a prose string, replacing them with '; '.
+    Applied to every model-authored / free-text field before it is rendered, so the
+    constraint holds 'anywhere in the report' without touching identifiers or URLs."""
+    if not text:
+        return text
+    return _PUNCT_DASH_RE.sub("; ", text)
+
 
 def derive_dom_id(branch):
     """Derive a DOM-id from a branch name, or None.
@@ -188,29 +204,35 @@ def merge(sessions, github, linear, notes, window):
 # Formatters
 # --------------------------------------------------------------------------- #
 
-def _commit_subject(c):
-    """A bucket commit may be a plain string or a {subject, domId} object."""
-    if isinstance(c, dict):
-        return c.get("subject", "")
-    return c
-
-
-def _ticket_sub_bullets(ticket):
-    """Indented '  - ' sub-bullets for a ticket: summary, CI, commits, PRs."""
-    lines = []
-    summary = ticket.get("summary")
-    if summary:
-        lines.append("  - " + summary)
+def _stats_line(ticket):
+    """A single collapsed texture line: commit volume + CI rounds, joined by ' · '.
+    Individual commit subjects are deliberately NOT rendered — they are narration
+    signal only (see SKILL.md §4). Returns None when there is nothing to show."""
+    parts = []
+    n = len(ticket.get("commits", []) or [])
+    if n:
+        parts.append("{} commit{}".format(n, "" if n == 1 else "s"))
     for ev in ticket.get("ciEvents", []) or []:
         pipeline = ev.get("pipeline")
         fail = ev.get("failCount")
-        lines.append(
-            "  - CI: {} failed {}× before passing.".format(pipeline, fail)
-        )
-    for c in ticket.get("commits", []) or []:
-        subject = _commit_subject(c)
-        if subject:
-            lines.append("  - commit: " + subject)
+        if pipeline and fail:
+            parts.append("CI: {} failed {}× before passing".format(pipeline, fail))
+    if not parts:
+        return None
+    return "  - " + " · ".join(parts)
+
+
+def _ticket_sub_bullets(ticket):
+    """Indented '  - ' sub-bullets for a ticket: the arc-voice summary, a single
+    collapsed commit-count/CI stats line, then PR links. Raw commit subjects are
+    never enumerated here (git already has the log) — they only inform the summary."""
+    lines = []
+    summary = ticket.get("summary")
+    if summary:
+        lines.append("  - " + _no_dashes(summary))
+    stats = _stats_line(ticket)
+    if stats:
+        lines.append(stats)
     for pr in ticket.get("prs", []) or []:
         state = (pr.get("state") or "").lower()
         lines.append(
@@ -239,13 +261,13 @@ def _status_label(ticket):
 def _ticket_bold_line(ticket):
     dom_id = ticket.get("domId")
     url = ticket.get("url")
-    title = ticket.get("title")
+    title = _no_dashes(ticket.get("title"))
     status_text = _status_label(ticket)
     if url:
         head = "**[{}]({}) · {}**".format(dom_id, url, title)
     else:
         head = "**{} · {}**".format(dom_id, title)
-    return "{} — {}".format(head, status_text)
+    return "{} ({})".format(head, status_text)
 
 
 def format_range(narrated):
@@ -260,12 +282,12 @@ def format_range(narrated):
         block = ["**Other PRs**"]
         os_summary = narrated.get("otherPRsSummary")
         if os_summary:
-            block.append("  - " + os_summary)
+            block.append("  - " + _no_dashes(os_summary))
         for pr in other_prs:
             state = (pr.get("state") or "").lower()
             block.append(
-                "  - PR [#{}]({}) {} — {}".format(
-                    pr.get("number"), pr.get("url"), state, pr.get("title")
+                "  - PR [#{}]({}) {} ({})".format(
+                    pr.get("number"), pr.get("url"), state, _no_dashes(pr.get("title"))
                 )
             )
         groups.append("\n".join(block))
@@ -275,9 +297,9 @@ def format_range(narrated):
         block = ["**Meetings / Notes**"]
         notes_summary = narrated.get("notesSummary")
         if notes_summary:
-            block.append("  - " + notes_summary)
+            block.append("  - " + _no_dashes(notes_summary))
         for n in notes:
-            block.append("  - {}: {}".format(n.get("date"), n.get("text")))
+            block.append("  - {}: {}".format(n.get("date"), _no_dashes(n.get("text"))))
         groups.append("\n".join(block))
 
     return "\n\n".join(groups) + "\n"
@@ -299,15 +321,15 @@ def format_report(narrated):
 
     for ticket in narrated.get("tickets", []) or []:
         dom_id = ticket.get("domId")
-        title = ticket.get("title")
+        title = _no_dashes(ticket.get("title"))
         status = _status_label(ticket)
         url = ticket.get("url")
         if url:
-            heading = "## [{}]({}) · {} — {}".format(
+            heading = "## [{}]({}) · {} ({})".format(
                 dom_id, url, title, status
             )
         else:
-            heading = "## {} · {} — {}".format(dom_id, title, status)
+            heading = "## {} · {} ({})".format(dom_id, title, status)
         lines.append(heading)
         lines.append("")
         # The narrated summary leads the sub-bullets (see _ticket_sub_bullets),
@@ -322,12 +344,12 @@ def format_report(narrated):
         os_summary = narrated.get("otherPRsSummary")
         if os_summary:
             lines.append("")
-            lines.append(os_summary)
+            lines.append(_no_dashes(os_summary))
         for pr in other_prs:
             state = (pr.get("state") or "").lower()
             lines.append(
-                "  - PR [#{}]({}) {} — {}".format(
-                    pr.get("number"), pr.get("url"), state, pr.get("title")
+                "  - PR [#{}]({}) {} ({})".format(
+                    pr.get("number"), pr.get("url"), state, _no_dashes(pr.get("title"))
                 )
             )
         lines.append("")
@@ -338,9 +360,9 @@ def format_report(narrated):
         notes_summary = narrated.get("notesSummary")
         if notes_summary:
             lines.append("")
-            lines.append(notes_summary)
+            lines.append(_no_dashes(notes_summary))
         for n in notes:
-            lines.append("  - {}: {}".format(n.get("date"), n.get("text")))
+            lines.append("  - {}: {}".format(n.get("date"), _no_dashes(n.get("text"))))
         lines.append("")
 
     return "\n".join(lines) + "\n"

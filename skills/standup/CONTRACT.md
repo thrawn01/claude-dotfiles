@@ -124,27 +124,41 @@ Merge rules (covered by surface tests):
 
 ## 6. Narrated buckets
 
-The model reads `buckets.json` and adds a `summary` string (one grounded, first-person,
-past-tense line) to each ticket bucket and to the `otherPRs`/`notes` groups as needed. The
-narrated object is `buckets.json` with `summary` fields added; nothing else changes. The
-formatters consume the narrated object.
+The model reads `buckets.json` and adds a `summary` string to each ticket bucket and to the
+`otherPRs`/`notes` groups as needed. The summary is one grounded, first-person, past-tense
+**arc line** — what was worked on, how it went, where it landed — at the altitude of spoken
+standup, NOT a restatement of the commit log (see SKILL.md §4 for the voice + the
+signal→tone heuristics that keep it derivable, never invented). The narrated object is
+`buckets.json` with `summary` fields added; nothing else changes. The formatters consume
+the narrated object.
 
 ## 7. Range clipboard format — `format_range(narrated) -> string`
 
 The golden contract (from the blueprint). One group per ticket; bold ticket line with
-inline Linear link + status; narrated summary + CI/commit/PR facts as indented sub-bullets;
-`Other PRs` and `Meetings / Notes` as their own groups. Inline links use markdown
-`[text](url)`. Example:
+inline Linear link + status in parens; then the narrated arc summary, an optional **single
+collapsed stats line** (commit count + CI rounds, joined by ` · `), and the PR link(s) as
+indented sub-bullets. Individual commit subjects are **never** enumerated; they inform the
+summary only. `Other PRs` and `Meetings / Notes` are their own groups. Inline links use
+markdown `[text](url)`. Example:
 
 ```
-**[DOM-1608](https://linear.app/.../DOM-1608) · golangci-lint shards** — Done
-  - Got lint shards green after several CI rounds.
-  - CI: golangci-lint failed 3× before passing.
+**[DOM-1608](https://linear.app/.../DOM-1608) · golangci-lint shards** (Done)
+  - Got the lint shards green after a few rounds with CI.
+  - CI: golangci-lint failed 3× before passing
   - PR [#206941](https://github.com/.../206941) merged
 
-**[DOM-1597](https://linear.app/.../DOM-1597) · custody migration** — In Review
-  - Pushed 2 commits, addressed Copilot comments.
+**[DOM-1597](https://linear.app/.../DOM-1597) · custody migration** (In Review)
+  - Spent the session wrestling the migration green; daggerWatcherTest breakage and go.mod drift.
+  - 2 commits
+  - PR [#206900](https://github.com/.../206900) open
 ```
+
+**No dashes (report-wide).** Punctuation dashes — em-dash `—`, en-dash `–`, and the spaced
+hyphen clause break ` - ` — are banned from all rendered prose; only `;` `,` `(` `)` may join
+clauses. Status is shown in parens `(Done)`, not after a dash. The model writes summaries this
+way (SKILL.md §4) and the formatters defensively rewrite any stray dash to `; ` via
+`_no_dashes()` before rendering. Hyphens inside identifiers and URLs (`DOM-1546`, kebab branch
+names) are not clause-break punctuation and are preserved.
 
 ## 8. Report + delivery — `format_report(narrated) -> markdown`, `deliver(...)`
 
