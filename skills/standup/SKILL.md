@@ -125,6 +125,12 @@ line is specific, but pull that from the commit subjects / turns / titles; do no
 them as a list. One sentence. If genuinely nothing but a status change happened, a short line
 is correct, so don't pad it.
 
+**Don't name the ticket's own id in its summary.** The line is already grouped under that
+ticket (and downstream tooling posts it as a comment *on* that ticket), so "Opened DOM-1635
+to track configuration" is redundant — write "Opened this ticket to track configuration" or
+just "Started tracking configuration." Cross-references to *other* tickets are fine and useful
+("Topic 3 of DOM-1622").
+
 **No dashes anywhere in the report.** Em-dashes (`—`), en-dashes (`–`), and the spaced hyphen
 clause break (` - `) are banned from all prose. Join clauses with `;` or `,`, or set an aside
 in parentheses `(` `)`, instead. Write the summaries this way directly — the formatter also
