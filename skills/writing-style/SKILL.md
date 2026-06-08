@@ -1,17 +1,15 @@
 ---
 name: writing-style
-description: Write or edit writing in the practitioner essay style — experience-backed, opinionated, structured but conversational. Use for blog posts, tech specs, engineering communications, and any long-form writing the user asks for. Activated when the user asks to "write a post", "draft a blog", "write up X", "edit this for style", or invokes /writing-style directly.
+description: Write or edit writing in the user's practitioner blog voice — experience-backed, conversational, story-driven, opinionated but humble. Use for blog posts, tech specs, engineering communications, and any long-form writing the user asks for. Activated when the user asks to "write a post", "draft a blog", "write up X", "edit this for style", "review this for my style", or invokes /writing-style directly.
 ---
 
-# Practitioner Essay Style
+# Practitioner Voice
 
-All writing produced under this skill follows the practitioner essay style. This style draws authority from production experience, not theory. It is opinionated but fair-minded, conversational but structured, and always grounded in real-world consequences.
+All writing produced under this skill follows the author's natural voice, derived from their published posts. The native format is the blog post; other media (tech specs, comms, docs) scale the voice down — see Adapting to Medium at the end.
 
-This skill applies to blog posts, tech specs, engineering communications, internal documentation, and any other long-form writing the user requests. Adapt the structure and formality to the medium — a blog post gets full narrative treatment, a tech spec gets the tone and argumentation pattern without the storytelling.
+## 1. The Core Voice
 
-## Voice
-
-Write as an experienced practitioner speaking to peers. Authority comes from having built and operated systems, not from citations or credentials. Ground claims in production experience — what happened, what broke, what worked. First-person accounts of real outcomes are the primary evidence.
+A practitioner telling war stories over a beer. The author writes from the builder's seat. Every claim is experience-backed where possible, though pure theory appears at times. Either way the register stays practitioner-first, not academic. Authority comes from anecdote and evidence, not always citation.
 
 The practitioner voice implies:
 - You've been burned by the thing you're warning about
@@ -21,128 +19,164 @@ The practitioner voice implies:
 ### Technical specificity over polish
 This voice sounds like someone who builds systems, not someone who writes about building systems. Prefer concrete technical details (name the database, the failure mode, the scale) over polished generalizations. "The reservation timed out and the message was delivered twice" is better than "things can go wrong in unexpected ways." When a sentence could appear in any senior engineer's blog post, it's too generic — make it specific to the actual system and experience.
 
-## Argumentation Pattern
+## 2. Sentence Length & Structure
 
-Structure arguments using the practitioner cycle. This is a repeatable unit — use it once for short pieces, nest it for longer ones where each section gets its own cycle.
+- High variance, ~20-25 words average. Long, winding, multi-clause sentences (40+ words, stacked with commas and asides) alternate with short punchy payoffs ("Yes, all costs!", "How so?", "(yes, they will do this)").
+- Comma splices are a signature, not a mistake. "you have two options, you can shard or you can eliminate the lock." Clauses chain with commas where a stricter writer would use periods or semicolons. Preserve these when editing.
+- Rhetorical questions as gear-shifts. "So what are we to do?", "What did we do instead?", "How so?" — ask the reader's question, then answer it.
+- Trailing ellipses for comic timing, often four dots not three. "So....", "Now... Hopefully", "Well, I'll answer like any good Principal Engineer should... 'It depends....'"
+- CAPS for emphasis instead of bold or italics. "you MUST", "you may THINK you need a lock", "not IF... but WHEN", "THE MOST EXPENSIVE part".
+- Short paragraphs, 2-3 sentences typical. Break longer runs of thought into separate paragraphs rather than packing 5-6 sentences into a wall of text. Each paragraph carries one beat; when the beat shifts, start a new paragraph.
 
-### 1. Positional claim
-Open with a clear stance. Plant a flag the reader can agree or disagree with. This is a declaration, not a question and not a gentle introduction. But strong is not the same as edgy — the claim should be measured and defensible, not provocative for shock value. The goal is conviction, not controversy.
+## 3. Punctuation Preferences
 
-- Strong: "Only test the public surface."
-- Strong: "PostgreSQL carries the design baggage of a bygone era."
-- Too edgy: "The testing industry has a coverage fetish."
-- Weak: "In this post we'll explore some ideas about testing."
-- Weak: "There are many opinions on database design."
-
-### 2. War story
-Ground the claim in something that happened — a production incident, a team decision, a system you built or operated. This is where authority lives. The story should be specific enough to be credible (name the system, the scale, the failure mode) but brief enough to serve the argument. The war story is evidence, not the point.
-
-### 3. Extracted principle
-Pull back from the specific story and state the general rule. The word "extracted" matters — the principle was earned from the anecdote, not assumed beforehand. This is the inductive move from particular to general.
-
-### 4. Actionable guidance
-Close with concrete recommendations. Tell the reader what to do, not just what to think. This is the payoff — practical, specific, implementable.
-
-### Nesting
-In longer pieces, each section runs its own mini-cycle. A blog post with four sections might have four positional claims, four war stories, four principles, and four sets of guidance. The overall piece also follows the cycle at the macro level — the opening plants the big flag, the body provides the evidence, the conclusion extracts the overarching principle.
-
-## Tone
-
-Write with confident informality — conversational but structured, opinionated but fair-minded.
-
-### What the tone is
-- **Conversational**: contractions, colloquialisms, first-person accounts. Reads like talking to a peer, not lecturing a classroom.
-- **Authoritative**: speaks with confidence. Doesn't hedge or equivocate. Takes positions and defends them.
-- **Earnest**: genuinely cares about the topic. Not detached, not ironic. Comfortable showing frustration or enthusiasm.
-- **Direct**: every sentence does work. No filler, no padding, no throat-clearing.
-- **Humorous when natural**: humor is dry and offhand — a parenthetical aside, a deadpan observation, an analogy grounded in something concrete ("smoke some brisket to celebrate — I live in Texas, it's a thing"). Never quippy, never performative, never a punchline crafted for effect. If the humor calls attention to itself, it's too much.
-
-### What the tone is not
-- Not chatty or meandering. Forward momentum always.
-- Not formal or academic. Never "one might observe that..." or "it should be noted that..."
-- Not preachy or moralizing. State the case and move on.
-- Not detached or dispassionate. Care is visible.
-
-### Anti-patterns to avoid
-- Never open with "Hey folks!" or "Welcome to..." or "In this post we'll explore..."
-- Never use academic hedging: "it could be argued that," "there is evidence to suggest"
-- Never moralize: "developers should really think about..." "it's important to remember..."
-- Never use filler transitions: "Moving on...", "With that said...", "Let's dive in..."
-- Never use "we" to mean the general reader when the writer means "I." Use "I" for personal experience, "we" only when referring to an actual team.
-- Never let a secondary concern become the framing lens. If the post is about testing strategy, frame it through the product and the customer — not through CI status or coverage badges. If the post is about developer workflow, then tooling framing is appropriate. Match the frame to the actual subject.
-
-## Punctuation Preferences
+These apply to new prose the skill generates. (When editing the author's existing text, voice-preservation in section 11 takes priority.)
 
 ### No colons
-Almost never use `:` in writing. Not for introducing lists, not for setting up a clause after a statement. Restructure the sentence instead.
+Almost never use `:` in prose. Not for introducing lists, not for setting up a clause after a statement. Restructure the sentence instead.
 
 - Wrong: "They are two phases of the same project: discover the interface, then exploit it."
 - Right: "They are two phases of the same project. Discover the interface, then exploit it."
 - Right: "They are two phases of the same project (discover the interface, then exploit it)."
 
 ### No dashes
-Almost never use `-`, `--`, or `—` (em-dash) as punctuation in writing. Instead use semicolons or parenthetical sub-thoughts.
+Almost never use `-`, `--`, or `—` (em-dash) as punctuation in prose. Use commas, parentheticals, or sentence breaks instead — the author's natural connectors are the comma splice and the parenthetical aside, not the dash.
 
 - Wrong: "The spec is simply the cheapest surface — the place where architecture arguments belong."
-- Right: "The spec is simply the cheapest surface; the place where architecture arguments belong."
+- Right: "The spec is simply the cheapest surface, the place where architecture arguments belong."
 - Right: "The spec is simply the cheapest surface (the place where architecture arguments belong)."
 
-Semicolons join two related independent clauses. Parentheticals hold a sub-thought that interrupts the main sentence without derailing it.
+## 4. Tone & Humor
 
-## Rhetorical Devices
+- Self-deprecating, never smug. The author's own mistakes are the curriculum. "Our folly, is your reward.... now on with the show." Admits being talked out of bad ideas.
+- Parenthetical one-liners are the primary humor delivery. "(Ask me how I know)", "(Me no likey)", "(I live in Texas, it's a thing)", "(Trade mark pending, DW 2022)".
+- Occasional absurdist escalation. "will make babies all over the world cry tears of sadness", "Contact Lenses as a service", "talked to at least 3 other people including your senile grandma".
+- Vivid extended metaphors for serious points. Production as "a dragon you don't want to wake", the v2 green field with "a septic tank just under the surface", developers as gardeners not engineers.
+- Direct reader address with "you". "We" always means an actual team (e.g., "we at Mailgun") — shared credit, never "I built". Use "I" for personal experience, "we" only for an actual team.
+- Earnest. Genuinely cares about the topic. Not detached, not ironic. Comfortable showing frustration or enthusiasm.
 
-Two devices are core to this style. Use them naturally, not mechanically.
+### Anti-patterns
+- Never formal or academic. No "one might observe that...", "it could be argued that", "there is evidence to suggest".
+- Never preachy or moralizing. No "developers should really think about...", "it's important to remember...". State the case and move on.
+- Never use the "I hear you say" or "you might say" construction (too performative, too audience-aware). Objections arrive as "But wait..." or "You might be thinking..." — a natural interruption in the writer's own train of thought.
+- Never use stage patter — the narrator stepping out of the story to announce or vouch for it ("and let me tell you", "trust me", "believe me", "I kid you not", "you heard that right", "spoiler alert", "buckle up", "and that, my friends"). This voice talks *with* the reader, never performs *at* the reader. Emphasis comes from the anecdote itself ("ask me how I know"); the evidence carries the weight, the narrator never promises it will land.
+- Never flag the payoff before delivering it — manufactured suspense where the narrator announces a twist, catch, or insight is coming instead of just stating it ("but here's the catch", "here's the thing", "but here's where it gets interesting", "and here's the kicker", "what's really going on is"). Often paired with a claim that the reader would underrate it ("the part that's easy to wave away", "the part everyone misses", "sounds simple, but"). This is stage patter's setup-shaped cousin: it promises significance the sentence hasn't earned and tells the reader to brace instead of letting the content surprise them. State the catch as a catch and let it bite. The objection-handling this voice *does* use ("But wait...", "You might be thinking...") raises a real counter-argument the reader would actually have; it never teases an unnamed payoff. On-voice, the surprise lands because the concrete detail is surprising, not because the narrator warned you it was coming.
+- Never let a secondary concern become the framing lens. If the post is about testing strategy, frame it through the product and the customer, not through CI status or coverage badges. Match the frame to the actual subject.
+- Never manufacture authority through revealed-secret framing ("the thing nobody tells you", "what they don't teach you", "the dirty secret of X"). That's engagement-bait rhetoric implying gatekept knowledge being leaked to the reader. Hard-won lessons arrive as confessions from personal experience ("ask me how I know", "we learned this the hard way"), never as hidden truths. There are no gatekeepers in this voice, just scars.
+- Never use sensory or memoir-style atmospherics ("I can still smell the coffee", the server-room hum, the 3am terminal glow). That's creative-nonfiction scene-setting. Specificity stays technical, not cinematic — details earn their place by being load-bearing to the engineering story (the config flag, the timeout value, the version number). Nostalgia shows up as fact ("we were still on CentOS 6"), not mood.
+- Never deflect ownership of a lesson — framing hard-won knowledge as a failure of others to warn, teach, or document ("nobody warned me about", "I wish someone had told me", "the docs never mentioned", "they don't prepare you for"). This is the victim-side twin of revealed-secret framing: one poses as the gatekeeper leaking knowledge, the other as the victim of gatekeeping, and both deny ownership. In this voice, lessons originate from the author's own choices and mistakes, full stop. The on-voice versions are confession-shaped ("ask me how I know", "we learned this the hard way", "our folly is your reward"). The mistake is the curriculum and the author owns it; the world never owed a warning.
+- Never self-mythologize — the narrator stepping out to label their own experience as legend ("that's where the scars come from", "I have the battle scars to prove it", "war stories", "battle-tested" applied to oneself). This is stage patter's quieter cousin: instead of vouching that the story will land, it vouches that the storyteller is seasoned. Tell the story as fact and let it scar on its own; the reader decides what's a war story.
+- Never use sentimental keepsake framing — objects held onto as emotional props ("partly as a souvenir", "I keep it as a reminder of simpler times", "a relic of that era"). Keeping an old `.config` around as a reference is on-voice (it's useful); keeping it as a memento is memoir mood. If the object appears, it earns its place by being load-bearing, not by carrying feelings.
 
-### Dialogic objection handling
-Anticipate what a skeptical reader would say and address it mid-paragraph. Argue with an imagined interlocutor. This creates a sense of conversation and shows the writer has considered the counterargument.
+## 5. Vocabulary
 
-The construction matters: phrase objections as things the reader "might be thinking" or introduce them with "But wait..." — as if the thought just occurred in real-time. Never use the "I hear you say" or "you might say" construction, which sounds like a TED talk addressing an audience. The objection should feel like a natural interruption in the writer's own train of thought.
+Uses:
+- Plain, spoken-register words. "stuff", "thingie?", "beefy", "clobber", "littering", "sneaky suspicion".
+- "golang" (lowercase, never "Go" alone); lowercase brand styling generally ("python").
+- Quotable maxims set off as blockquotes. "Once you release it, it lives forever." "If everything is a priority, then nothing is a priority."
+- "TLDR", "KISS", "It depends...."
+- "The real X" constructions for the difficulty/cost reveal. "the real work", "the real challenge", "the real bottleneck". Prefer these over "the hard part" (which is on-voice but less distinctive).
+- Pun headings, especially Hamlet-pattern. "UID or Not to UID", "GRPC or not to GRPC", "The POST office just called", "need a rest from REST".
 
-- "But wait, doesn't your example include user-provided data in the path? Yes, it does, and as with most things in life, there are exceptions."
-- "You might be thinking this only applies to large teams. It doesn't."
-- Wrong register: "I hear you saying, 'but that's slow.'" (too performative, too audience-aware)
+Never uses:
+- Corporate/blog clichés. leverage, utilize, delve, robust, seamless, cutting-edge, game-changer, best-in-class, synergy, deep dive, "in today's fast-paced world", "at the end of the day".
+- Academic transitions. Furthermore, Moreover, Thus far, In conclusion, Notwithstanding. ("Thus" appears rarely, and only mid-sentence.)
+- Hedge-padding. "It's worth noting that", "It should be mentioned".
+- Exclamation-point hype or listicle energy ("5 amazing tips!").
+- Second-person commands as headers ("Stop doing X!"). Imperatives live inside sentences, softened by "we recommend" or "I would advise caution here".
 
-### Aphoristic crystallization
-Compress a principle into a memorable one-liner that works as a standalone quote. These should feel earned — they land because the argument built up to them, not because they were clever in isolation.
+## 6. Transitions
 
-- "Once you release it, it lives forever."
-- "Good architecture makes change easy."
-- "There is no Vudu. The effect does have a cause."
+Actual transition palette, in rough frequency order:
+- "So..." / "So...." (the workhorse)
+- "Now..." / "Now let's look at..."
+- "Consider..." / "Let's consider..." / "Let's say..."
+- "Okay, let's say we..."
+- "But wait a second..." / "Wait a minute...."
+- "Put another way," (sometimes with a semicolon)
+- "Indeed," (the one slightly formal tic)
+- "However," mid-paragraph, never to open a section
+- "As such," / "In this way,"
+- "but I digress...."
 
-Use sparingly. One or two per piece is enough. Blockquotes are a natural home for these.
+## 7. Openings
 
-## Structure
+Open with a personal invitation to a story or conversation in the first sentence.
 
-### Headers as signposts
-Use headers to create a scannable structure. Readers should be able to get the argument from headers alone. Prefer short, declarative headers over question-form or clever headers.
+- "In the early days of Mailgun I started working on a distributed lock service."
+- "Contained within this post is the result of several discussions with David Dobbins over the years..."
+- "Let's talk about..."
+- "I keep reading about..."
 
-- Strong: "Avoid user provided data in the path"
-- Strong: "Test the Product, not the code"
-- Weak: "What should we think about next?"
-- Weak: "Down the rabbit hole"
+Then tease the payoff like a story hook. "So, let's talk about why the locking service never took off at Mailgun...." Never open with definitions, dictionary quotes, "Hey folks!", "In this post we'll explore...", or "In the world of software engineering...". The problem statement arrives wrapped in an admission or anecdote, something that led to the need to write this post, within the first paragraph.
 
-### Blockquotes
-Use blockquotes for two purposes: citing external sources and setting off the writer's own aphorisms or key claims. Both uses are common in this style.
+## 8. Closings
 
-### Lists for contrast
-When comparing two approaches or philosophies, use parallel bullet lists. This is a signature structural device — two lists side by side that make the contrast visceral.
+Endings are deliberately anti-climactic and forward-looking. No grand summary.
 
-### Short paragraphs
-Keep paragraphs to 2-3 sentences. Break longer runs of thought into separate paragraphs rather than packing 5-6 sentences into a wall of text. Each paragraph should carry one beat of the argument; when the beat shifts, start a new paragraph. This keeps the pacing quick and the page visually open.
+- The shrug close. "I've run out of things to talk about here, but I will eventually talk more about..."
+- The sequel tease. "If I've piqued your interest, I'll eventually link that article here."
+- The modest hope. "I hope this article helps you on your REST journey, and hopefully there are some mistakes we made which you won't have to make."
+- The future promise. "I guess I'll have to write about that some day."
 
-### Length and pacing
-Sections should be long enough to complete a thought but short enough to maintain momentum. If a section needs more than a few paragraphs, break it into subsections. If a post grows beyond its natural scope, break it into separate posts.
+Never a "Conclusion: In this post we learned..." recap. Closings are 1-3 sentences, warm, and usually point at a wiki-link or a future post.
 
-## Adapting to Medium
+## 9. Structural Habits
+
+- `##`/`###` headings every 2-4 paragraphs; titles conversational or punny, never SEO-bait.
+- Blockquotes for asides and maxims, including `> [!note]` callouts for continuations. Blockquotes also cite external sources.
+- Numbered options when comparing ("Option 1... Option 2... Option 3"), always with explicit trade-offs. "There is no right or wrong answer here" is a recurring stance.
+- Parallel bullet lists for contrast. When comparing two approaches or philosophies, two lists side by side make the contrast visceral.
+- Wiki-links `[[...]]` to the author's own posts, woven mid-sentence as deeper-reading offers.
+- Inline code for paths and identifiers; real benchmark images and traces as evidence.
+- Posts confess their own scope creep. "this post has already gone much longer than I originally imagined, so I'm breaking it up."
+
+## 10. Argument Pattern (signature move)
+
+1. Present the naive solution sympathetically ("Let's first consider the naive solution...").
+2. Walk into its failure with a concrete, user-visible example (`#trending`, `2020/02/01` vs `2020_02_01`).
+3. Escalate through alternatives, each with honest trade-offs.
+4. Land on a pragmatic answer, hedged with "it depends" and a judgment-call disclaimer.
+5. Close the loop on the opening anecdote ("At the beginning of this article, I teased that...").
+
+In longer pieces, each section runs its own mini-cycle of this pattern while the piece as a whole follows it at the macro level.
+
+### Supporting devices
+
+**Dialogic objection handling.** Anticipate what a skeptical reader would say and address it mid-paragraph, as if the thought just occurred in real time. "But wait, doesn't your example include user-provided data in the path? Yes, it does, and as with most things in life, there are exceptions."
+
+**Aphoristic crystallization.** Compress a principle into a memorable one-liner that works as a standalone quote, usually in a blockquote. These should feel earned, landing because the argument built up to them. One or two per piece is enough.
+
+## 11. Voice vs Typo (editing the author's text)
+
+- **Preserve as voice**: comma splices, CAPS emphasis, four-dot ellipses, parenthetical asides, and fragments used for rhythm.
+- **Quietly fix as typos**: missing apostrophes (Lets/its-it's), apostrophe plurals (API's -> APIs), homophones (except/accept, to/too, peaked/piqued), word-joins (apart of -> a part of, todo -> to do, preform -> perform), and stray mid-sentence capitals after commas.
+
+## 12. Review Cycle
+
+Any substantial output (a post, a spec, an edited article) goes through a review pass before it reaches the user. Skip it only for short-form output (Slack messages, emails) or trivial edits. There are two reviewers; which ones run depends on the job.
+
+1. **Style reviewer** (always runs). A sub-agent that gets the text and the path to this skill file (it must Read the file itself, fresh eyes on both). Instructed to lint against sections 2-10, with special attention to the anti-patterns in sections 4-5 (colons, dashes, stage patter, manufactured suspense / payoff-flagging, revealed-secret framing, memoir atmospherics, ownership deflection, self-mythologizing, keepsake framing, corporate clichés, academic transitions). It returns a list of violations, each with the quoted offending text and the rule it breaks. It does NOT rewrite, it only reports.
+
+2. **Fidelity reviewer** (runs whenever there is source material the output must stay true to — an outline, rough notes, or the original text when editing). The source material is authoritative for facts; every point in it must survive into the output with the user's emphasis preserved, and length comes from the source, not padding. This reviewer gets the output and the source material (not the skill file, it is checking substance, not style) and returns three lists.
+   - **Missing**: points in the source that don't appear in the output.
+   - **Distorted**: points whose emphasis or meaning shifted between source and output.
+   - **Invented specifics**: every concrete claim in the output (version numbers, metrics, tool names, anecdote details) that is NOT in the source. This list is exhaustive, not judged; the reviewer flags everything invented and the user decides what's acceptable. This matters because the voice demands technical specificity, so drafting will invent details to stay on-voice — allowed during drafting, but a fabricated anecdote silently attributed to the author's experience is the worst failure mode of this skill.
+
+When generating or editing text, run the applicable reviewers in parallel, fix what they report, and re-run them on the revision. Loop until clean, max 2 rounds (style nits that survive 2 rounds get fixed directly without another review pass). When presenting the result, always include the invented-specifics list verbatim, framed as "verify or replace these". Never silently ship invented details, even after the review loop is clean.
+
+**Review-only mode.** When the user asks for a style review of existing text before publishing (no rewrite requested), run the style reviewer and present its findings as the deliverable — quoted text, rule broken, and a suggested fix for each. Don't rewrite the document unless asked; section 11's voice-vs-typo distinction applies to what gets flagged (comma splices and CAPS are voice, not violations).
+
+## 13. Adapting to Medium
 
 ### Blog posts
-Full practitioner essay treatment. Narrative war stories, strong positions, aphorisms, humor. This is the native format for this style.
+Full voice as described above. Story openings, pun headings, digressions, absurdist humor, the shrug close. This is the native format.
 
 ### Tech specs
-Same tone and argumentation pattern, but compressed. Positional claims become design decisions. War stories become brief justifications referencing past experience. Extracted principles become design constraints. Actionable guidance becomes the specification itself.
+Keep the register (practitioner-first, plain words, honest trade-offs, "it depends" pragmatism) and the argument pattern (naive solution → failure → alternatives → pragmatic answer). Drop the storytelling scaffolding, pun headings, digressions, and the shrug close. Headers become short and declarative. War stories compress into brief justifications referencing past experience; the pragmatic answer becomes the specification itself.
 
 ### Engineering communications
-Emails, Slack posts, RFC comments. Same voice — direct, opinionated, grounded in experience. Shorter. Skip the narrative scaffolding but keep the confident informality and the willingness to take a position.
+Emails, Slack posts, RFC comments. Same voice — direct, experience-grounded, willing to take a position, parenthetical humor welcome. Much shorter; skip the narrative scaffolding.
 
 ### Internal documentation
-Handbooks, onboarding guides, runbooks. Same voice. Emphasize the "why" — documentation explains why things are the way they are, not just how they work. Production anecdotes are especially valuable here, as they give new team members the context that code alone cannot.
+Handbooks, onboarding guides, runbooks. Same voice, emphasizing the "why" — documentation explains why things are the way they are, not just how they work. Production anecdotes are especially valuable here, as they give new team members context that code alone cannot.
