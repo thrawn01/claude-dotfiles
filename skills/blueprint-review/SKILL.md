@@ -163,6 +163,9 @@ Correctness translation (only when a Correctness Constraints section exists):
 15. **Representable illegal state** — The data model permits a state a product invariant forbids, and a structural enforcement (schema constraint, type, foreign key) is clearly feasible but unused and unexplained.
 16. **Infeasible behavioral constraint** — The technical half's chosen architecture cannot enforce a product behavioral constraint, or doesn't show how it satisfies it. Quote both.
 
+Domain boundaries:
+25. **Domain boundary leak** — A problem domain contains logic that belongs to a domain it calls: branching on which implementation backs an interface, inspecting implementation-specific error types, or relying on an implementation-specific property for a correctness guarantee without that property being a contract of the interface. The canonical case is a caller that changes behavior depending on the storage backend, but applies at every boundary (service → component, component → dependency). Quote the leaking passage. If the leak is in invariant enforcement (an invariant holds only because of a specific implementation's property), also cite the invariant.
+
 Stories (only when a User Stories section exists):
 17. **Incorrect story** — A story contradicts the rest of the Blueprint, describes an impossible workflow, or has a factual error.
 18. **Missing story** — An important user workflow the product half describes has no corresponding story.
@@ -186,6 +189,7 @@ EVIDENCE RULES — every finding MUST include evidence:
 - Missing invariant preservation: name the invariant, name the operation(s) touching its data, confirm no preservation argument exists.
 - Representable illegal state: name the invariant, quote the data-model definition that permits the violating state, name the feasible structural enforcement.
 - Infeasible behavioral constraint: quote the constraint, quote the conflicting architectural choice, explain why it cannot be satisfied.
+- Domain boundary leak: quote the passage where one domain branches on or relies on another domain's implementation; if the leak is in invariant enforcement, also name the invariant and the implementation-specific property it depends on.
 - Invariant violation (stories): name the invariant; for combinatorial, name the two stories and the combined state.
 - Missing correctness story: name the constraint, confirm no story addresses its enforcement.
 - Product/technical inconsistency: quote both the product passage and the technical passage that diverge.
@@ -360,7 +364,7 @@ ROUTING RULES:
 **surface-to-user** (requires a product or design decision):
 - Gaps (product or technical), Inconsistencies, ADR conflicts, Scope ambiguity, Implicit assumptions, Unresolved open questions, Correctness gaps
 - Ambiguous implementation decisions, Missing testing surfaces, Missing failure modes
-- Missing invariant preservation, Representable illegal state, Infeasible behavioral constraint
+- Missing invariant preservation, Representable illegal state, Infeasible behavioral constraint, Domain boundary leak
 - Story categories requiring a judgment call — Missing story, Story scope issue, Invariant violation (stories), Missing correctness story, and any Missing acceptance criterion / Incorrect story / Unverifiable criterion whose correct resolution is not unambiguous from the rest of the Blueprint
 - Drift from code where Authoritativeness = "unclear"
 - Product/technical inconsistency where it is genuinely unclear which side is right, or where the technical half narrows product scope
@@ -452,7 +456,7 @@ Evaluate against these criteria:
 
 5. **Technical half covers the product half** — Does the technical design address every product requirement that needs a technical decision? (Not every bullet needs coverage — only those requiring an architectural or contract decision.) If yes, this passes.
 
-6. **Correctness preservation** — If there is a Correctness Constraints section: does the technical half show how each state invariant is preserved by the operations that touch it? Does the data model make illegal states unrepresentable where feasible? Does the architecture satisfy each behavioral constraint? If there is no Correctness Constraints section, this auto-passes. This does NOT require formal proofs — only that a reader can SEE why the design preserves each invariant without figuring it out themselves.
+6. **Correctness preservation** — If there is a Correctness Constraints section: does the technical half show how each state invariant is preserved by the operations that touch it? Does the data model make illegal states unrepresentable where feasible? Does the architecture satisfy each behavioral constraint? Does any invariant's enforcement rely on an implementation-specific property of a dependency without that property being a contract of the interface (domain-boundary leak)? If there is no Correctness Constraints section, this auto-passes. This does NOT require formal proofs — only that a reader can SEE why the design preserves each invariant without figuring it out themselves.
 
 7. **Stories coverage** — If there is a User Stories section: does each story have mechanically-verifiable acceptance criteria, and do the stories cover the workflows and correctness constraints the product half describes? If there is no User Stories section, this auto-passes.
 

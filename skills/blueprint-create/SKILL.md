@@ -151,6 +151,17 @@ UI mockups stay as separate Excalidraw/image files in the feature directory, lin
 
 Think through the angles that matter for this feature: interfaces and contracts, data, dependencies, failure modes, security, PII, operations (observability, performance, deployment, scale), and whatever else the product half and codebase demand. The goal is to surface the decisions an engineer needs before writing code — not to complete a checklist. Apply the architectural principles in `Handbook/Blueprint.md` (domain-based services, shallow critical path, single source of truth, transactions around every DB operation, denormalize within a service, and the rest).
 
+### Domain-boundary opacity
+
+A problem domain must not contain logic that belongs to a domain it calls. The caller depends on the callee's interface contract — never on how the callee fulfills it. If a domain needs a guarantee from a dependency, that guarantee is a contract of the interface (every implementation provides it); the caller never branches on which implementation is active, inspects implementation-specific error types, or relies on an implementation-specific property for correctness.
+
+During the technical discussion, actively probe for domain-boundary leaks:
+- For each interface the design defines, ask: "Does the caller ever need to know which implementation is behind this?" If yes, either the interface contract is incomplete (the guarantee should be part of it) or the caller is absorbing concerns that belong to the callee.
+- For each correctness invariant, ask: "Is enforcement above the interface, or does it depend on a property of a specific implementation?" If the latter, the invariant breaks when the next implementation ships.
+- For operational concerns (health checks, setup/teardown, durability), ask: "Does the calling domain branch on the dependency's type?" If yes, the dependency's interface needs a method (e.g., `Healthy()`, `Setup()`) so the caller stays opaque.
+
+When the design has multiple implementations of an interface (storage backends, transport layers, auth providers), this principle must be stated as a Core Design Principle in the Blueprint and the Invariant Preservation section must confirm that no invariant relies on an implementation-specific property without making it a contract of the interface.
+
 ### Correctness translation (the highest-leverage technical work)
 
 If the product half has a Correctness Constraints section, the technical half must show how the design preserves it:
@@ -194,7 +205,7 @@ At the end, list all flags with their count. Three or more is a signal the Bluep
 
 Before writing the file, run two mandatory passes over the discussion's conclusions:
 
-1. **Correctness pass.** If there is a Correctness Constraints section, confirm: every state invariant has a preservation argument for each operation that touches it; the data model makes illegal states unrepresentable where feasible (and explicitly notes which invariants rely on application logic); every behavioral constraint is satisfied by the architecture (or soft-flagged as conflicting); component boundaries have explicit preconditions/postconditions. Gaps here are design findings — resolve them before writing.
+1. **Correctness pass.** If there is a Correctness Constraints section, confirm: every state invariant has a preservation argument for each operation that touches it; the data model makes illegal states unrepresentable where feasible (and explicitly notes which invariants rely on application logic); every behavioral constraint is satisfied by the architecture (or soft-flagged as conflicting); component boundaries have explicit preconditions/postconditions; no invariant's enforcement relies on an implementation-specific property of a dependency without that property being a contract of the interface (domain-boundary opacity). Gaps here are design findings — resolve them before writing.
 2. **Testability pass** against the `surface-testing` skill. Confirm: every named surface is reachable from a test; every external dependency has a substitute tier; every async behavior has an observable assertion path (downstream effect, fake capture, or exposed observability API); time-dependent behavior routes through an injectable clock; any in-memory store has a parity-testing model. Gaps here are design findings, not testing findings — resolve them before writing.
 
 ## Writing the document
