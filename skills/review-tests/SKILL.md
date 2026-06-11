@@ -1,6 +1,6 @@
 ---
 name: review-tests
-description: Review whether a feature's existing tests actually cover the acceptance criteria, scenarios, and correctness constraints documented in its Blueprint (blueprint.md) — then fill the gaps with surface tests. Spawns gap-finding sub-agents plus a validator and a skeptic to eliminate false positives, then (when nothing is left for the user to decide) an implementer that writes the missing tests following the surface-testing skill. Use when the user says "review the tests", "check test coverage for this feature", "find test gaps", "review-tests", or wants to audit a feature's tests against its blueprint. Do NOT use to write tests from scratch for an unbuilt feature, or to validate a list of already-identified bugs (use review-validate for that).
+description: Review whether a feature's existing tests actually cover the acceptance criteria, scenarios, and correctness constraints documented in its Blueprint (blueprint.md) — then fill the gaps with surface tests, and finally sweep the implementation's code coverage to a soft 80% floor by surfacing still-uncovered code as candidate behaviors. Spawns gap-finding sub-agents plus a validator and a skeptic to eliminate false positives, then (when nothing is left for the user to decide) an implementer that writes the missing tests following the surface-testing skill. Use when the user says "review the tests", "check test coverage for this feature", "find test gaps", "review-tests", or wants to audit a feature's tests against its blueprint. Do NOT use to write tests from scratch for an unbuilt feature, or to validate a list of already-identified bugs (use review-validate for that).
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash, Agent, AskUserQuestion
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Read, Grep, Glob, Edit, Write, Bash, Agent, AskUserQuestion
 
 Given a built feature, prove its existing tests cover the acceptance criteria, scenarios, and correctness constraints documented in its Blueprint (`blueprint.md`) — then fill the gaps with surface tests.
 
-The pipeline is a single thorough pass: extract the testable expectations from the Blueprint, find coverage gaps with parallel sub-agents, validate and skeptically challenge those gaps to kill false positives, prove-or-refute any "this code is unreachable" claim by actually writing a test that reaches it, surface anything that needs a product decision — including disagreements between the Blueprint's own sections (its product half, technical half, and User Stories section), the ADRs, and the code's actual behavior — and, when nothing is left for the user to decide, have an implementer write the missing tests following the `surface-testing` skill. It persists a machine-parseable HTML coverage report so the next run knows what was found before.
+The pipeline is a single thorough pass: extract the testable expectations from the Blueprint, find coverage gaps with parallel sub-agents, validate and skeptically challenge those gaps to kill false positives, prove-or-refute any "this code is unreachable" claim by actually writing a test that reaches it, surface anything that needs a product decision — including disagreements between the Blueprint's own sections (its product half, technical half, and User Stories section), the ADRs, and the code's actual behavior — and, when nothing is left for the user to decide, have an implementer write the missing tests following the `surface-testing` skill. Then a final **Coverage Sweep** (Phase 6.5) measures the implementation's line coverage and lifts it toward a soft 80% floor: still-uncovered code becomes candidate behaviors that run through the very same validate→skeptic→probe→implement discipline, so the number is raised only by real surface tests — never by assertion-free padding — and any genuine shortfall (unreachable-through-surface code) is reported with evidence rather than gated on. It persists a machine-parseable HTML coverage report so the next run knows what was found before.
 
 **Two principles run through the whole pipeline:**
 1. **A claim that code is unreachable / untestable / dead is an empirical claim, not an argument.** It is the highest-scrutiny verdict in this skill. You never assign it by reasoning from the source; you assign it only after *attempting to write a test that reaches the code and failing*, with the specific unbypassable blocker named. Proving a gap exists already requires a failing test — proving the *absence* of a reachable behavior must be just as rigorous, or the pipeline will quietly bias toward false "untestable" verdicts.
@@ -47,16 +47,17 @@ If no Blueprint (or fallback spec document) can be found, ask the user for the f
    - Go: `go test ./<pkg>/... -coverprofile=/tmp/review-tests.cover -covermode=atomic` then `go tool cover -func=/tmp/review-tests.cover` (and per-line uncovered regions where useful).
    - Kotlin/JVM: the project's configured coverage (e.g. Kover/JaCoCo) if available.
    - Other: the standard coverage command for the toolchain.
-   If no coverage tooling is configured or it fails to run, note that in the report and proceed with behavioral mapping alone — but in that case run the scope's existing test suite once anyway so its tests actually execute. A `covered` verdict may be graded `test-verified` only if the suite ran this run (the coverage run counts); if neither the coverage run nor a plain test run executed, grade `covered` as `reasoning-only` — reading a test is not the same as seeing it pass.
-4. **State the scope to the user** before spawning agents: which feature, which docs were found, which implementation packages are in scope, and whether coverage tooling ran. Keep it to a few lines.
+   **Retain two things for the Coverage Sweep (Phase 6.5): the total coverage percentage for the scope, and the per-region uncovered list (file, line range, enclosing function).** Keep the raw profile on disk (e.g. `/tmp/review-tests.cover`) — Phase 6.5 re-reads it after the criteria tests are added.
+   If no coverage tooling is configured or it fails to run, note that in the report and proceed with behavioral mapping alone — but in that case run the scope's existing test suite once anyway so its tests actually execute. A `covered` verdict may be graded `test-verified` only if the suite ran this run (the coverage run counts); if neither the coverage run nor a plain test run executed, grade `covered` as `reasoning-only` — reading a test is not the same as seeing it pass. With no coverage tooling, the Phase 6.5 sweep is skipped and the report records `coverageToolRan: false`.
+4. **State the scope to the user** before spawning agents: which feature, which docs were found, which implementation packages are in scope, the baseline coverage percentage (if tooling ran), and whether coverage tooling ran. Keep it to a few lines.
 
-**Coverage tooling is a corroborating signal, not the authority.** A covered line is not the same as a covered *criterion* (a line can execute incidentally without any assertion proving the behavior), and a criterion can be legitimately covered by a test that lives in another package. Behavioral mapping decides coverage; the coverage profile points agents at suspicious untested code and guards against "I assumed a test exists."
+**Coverage tooling is a corroborating signal and a discovery source — never a pass/fail gate.** A covered line is not the same as a covered *criterion* (a line can execute incidentally without any assertion proving the behavior), and a criterion can be legitimately covered by a test that lives in another package. Behavioral mapping decides coverage; the coverage profile points agents at suspicious untested code and guards against "I assumed a test exists." The **80% floor** introduced in Phase 6.5 is a *soft* target: still-uncovered code becomes candidate behaviors to investigate through the same surface-test discipline, and the report explains any shortfall rather than failing. The skill never brute-forces a number by writing assertion-free tests, and never tests internals to lift coverage.
 
 ## Phase 1: Criteria Extraction
 
 Build a single normalized, numbered checklist of every testable expectation in the Blueprint. Do this yourself (orchestrator) by reading the Blueprint, or delegate to one extraction sub-agent if it is large. Each checklist item has:
 
-- **id** — stable identifier prefixed by `kind`: `AC-` for functional, `INV-` for invariant, `CON-` for constraint, `BND-` for boundary (e.g. `AC-1`, `INV-2`). Carry forward ids from a prior `review-tests.html` when the criterion is unchanged, so history lines up.
+- **id** — stable identifier prefixed by `kind`: `AC-` for functional, `INV-` for invariant, `CON-` for constraint, `BND-` for boundary (e.g. `AC-1`, `INV-2`). A fifth prefix, `COV-`, is reserved for coverage-derived candidates, but those are **not** extracted here — they are generated in Phase 6.5 from the uncovered-region list *after* the Blueprint criteria are implemented, so coverage measures what is still dark. Carry forward ids from a prior `review-tests.html` when the criterion is unchanged, so history lines up.
 - **source** — which Blueprint section (or story) it came from (quote the relevant text).
 - **text** — the expected behavior, stated as an observable condition.
 - **surface** — the public entry point a test would use to exercise it (endpoint, CLI command, exported function), or `unknown` if not yet determinable.
@@ -65,6 +66,7 @@ Build a single normalized, numbered checklist of every testable expectation in t
   - `invariant` — a state invariant from the Blueprint's Correctness Constraints section (e.g. "balance is never negative").
   - `constraint` — a behavioral constraint (e.g. "messages are never silently dropped").
   - `boundary` — a component boundary precondition/postcondition.
+  - `coverage` — a candidate behavior derived from an uncovered code region (assigned in Phase 6.5, not here).
 
 Extract correctness-derived items (`invariant`, `constraint`, `boundary`) only when the Blueprint has an explicit Correctness Constraints section — these map onto the **Correctness-Derived Tests** section of the `surface-testing` skill (invariant-violation tests, behavioral-constraint tests, boundary-contract tests). The Blueprint's state invariants map to `invariant` items and its behavioral constraints to `constraint` items. Do not invent correctness constraints the Blueprint does not state.
 
@@ -299,6 +301,24 @@ For items the Reachability Probe (Phase 4.5) already proved REACHABLE, **reuse t
 
 Follow CLAUDE.md exactly: tests in `package xxx_test`, table-driven where appropriate, `require`/`assert` from testify, no descriptive messages on assertions, surface-only access.
 
+## Phase 6.5: Coverage Sweep (Soft 80% Floor)
+
+The Blueprint pass measures coverage against *documented* behavior. This phase measures it against the *code that actually exists* — the bottom-up complement — and lifts the scope toward a **soft 80% line-coverage floor** by turning still-uncovered code into candidate behaviors that flow through the same discipline. Skip this phase entirely if coverage tooling did not run in Phase 0 (record `coverageToolRan: false` and note the sweep was skipped).
+
+This phase runs **after** Phase 6 so coverage reflects the criteria tests just added — it sweeps what is *still* dark, not what the Blueprint pass was already about to cover.
+
+1. **Re-measure.** Re-run the Phase 0 coverage command over the scope now that the new tests exist. Record the post-criteria percentage. If it is already ≥ 80%, record the floor as met and skip to the report — do not manufacture tests to pad a number that is already adequate.
+2. **Emit `COV-` candidates.** For each still-uncovered region (file, line range, enclosing function), create a candidate criterion: `id` = `COV-<n>`, `kind` = `coverage`, `source` = `coverage:<file>:<lines>`, `text` = the behavior that region implements stated as an observable condition, `surface` = the nearest public entry point that could drive it (or `unknown`). Group trivially-related regions (e.g. all branches of one validation function) into one candidate so the list stays behavior-sized, not line-sized. **Do not** emit candidates for code the project conventionally excludes from coverage (generated files, `main()` wiring already delegated to a tested `Run()`, vendored code) — note the exclusion instead.
+   **Key each `COV-` id stably by `<file>#<enclosing-function>` + a short behavior slug, NOT by raw line numbers** — line ranges shift every time the code changes, so a line-keyed id would fragment one region's history into a new criterion every run. When a prior `review-tests.html` already has a `COV-` item for the same function+behavior, reuse its id so `history` lines up (the `source` line range may update; the id must not). A region that became covered since the last run is carried forward with its existing id and a `covered`/`test-added` status, not dropped.
+3. **Run the candidates through the existing tail, skipping Phase 2.** A `COV-` candidate is uncovered by definition, so it does not need the COVERED/PARTIAL/GAP gap-finders — send it straight to the **Phase 3 validator** for bucketing, then the **Phase 4 skeptic**, the **Phase 4.5 reachability probe**, Phase 5 triage, and the Phase 6 implementer. The buckets carry the same meanings; the common outcomes for coverage candidates are:
+   - **GENUINE-GAP** → a surface test is written (Phase 6). Coverage rises.
+   - **UNTESTABLE-NEEDS-DESIGN** → the region is real but unreachable/unobservable through the surface (defensive branches, `if err != nil` on calls that cannot fail in-surface, panic guards). This is the *expected, honest* outcome for a chunk of uncovered code — recorded with the Phase 4.5 reach attempt as evidence, **not** brute-forced into a test. It counts against the floor with a stated reason.
+   - **BEHAVIOR-GAP-SUSPECTED / behavior-gap** → writing the reaching test exposes that the code is wrong; left red and reported loud, same as any other behavior gap.
+   - **DOC-DISAGREEMENT / NEEDS-BEHAVIOR-DECISION** → the region's intended behavior is contested or ambiguous; gated to the user like any other question. Because this phase runs after the Blueprint pass already gated once, coverage-derived questions form a **second** `AskUserQuestion` round — batch all of them into one round here rather than asking per-candidate.
+4. **Evaluate the floor — as a report line, never a gate.** After the sweep, record the final coverage percentage and classify the remainder below 100%: tests-added, untestable-through-surface (with evidence), conventionally-excluded, declined, or open-question. A scope that lands below 80% **is a valid, complete outcome** when the shortfall is accounted for — e.g. "76%; the missing 4 points are 3 defensive branches Phase 4.5 confirmed unreachable + 1 region awaiting a behavior decision." Never write an assertion-free test, and never reach into internals, to move the number.
+
+The same prohibitions apply as everywhere else in this skill: surface-only tests, safe additive testability changes only, failing gap tests left red, sources-disagree-surface-don't-adjudicate. `COV-` criteria are recorded in the report with their own kind so the coverage view is distinct from the Blueprint criteria matrix.
+
 ## Phase 7: Report
 
 Write a self-contained `review-tests.html` to the feature directory (`docs/features/{feature}/review-tests.html`) and print a short chat summary.
@@ -322,20 +342,28 @@ The report is **both** human-informative and machine-parseable. It must:
       "reviewedDocs": ["blueprint.md"],
       "implementationPackages": ["path/to/pkg"],
       "coverageToolRan": true,
+      "coverage": {
+        "floor": 80,
+        "baselinePct": 0,
+        "finalPct": 0,
+        "floorMet": false,
+        "remainder": "<one line accounting for the gap below 100%: e.g. 3 unreachable-through-surface branches + 1 awaiting decision>"
+      },
       "summary": {
         "total": 0, "covered": 0, "partial": 0,
         "testsAdded": 0, "testabilityChanges": 0,
         "behaviorGaps": 0, "openQuestions": 0,
-        "docDisagreements": 0, "untestable": 0
+        "docDisagreements": 0, "untestable": 0,
+        "coverageTestsAdded": 0, "coverageUntestable": 0
       },
-      "delta": "<one line: e.g. 4 tests added, 1 behavior gap found, 2 prior gaps closed>"
+      "delta": "<one line: e.g. 4 tests added, 1 behavior gap found, 2 prior gaps closed, coverage 71%→83%>"
     }
   ],
   "criteria": [
     {
       "id": "AC-1",
-      "kind": "functional",
-      "source": "blueprint.md#user-stories/story-3",
+      "kind": "functional | invariant | constraint | boundary | coverage",
+      "source": "blueprint.md#user-stories/story-3   (or coverage:<file>:<lines> for a COV- item)",
       "text": "<observable behavior>",
       "surface": "POST /orders",
       "status": "covered | partial | test-added | testability-change | behavior-gap | untestable | doc-disagreement | open-question | declined",
@@ -365,11 +393,12 @@ The top-level `status`, `coveringTests`, `testAdded`, and `note` on each criteri
 **Human-readable HTML must include:**
 - A header with the feature, the latest run's number and datetime stamp, the docs reviewed, the implementation packages in scope, and whether coverage tooling ran.
 - A summary line with the counts from the latest run's `summary`.
-- A **coverage matrix** table reflecting the CURRENT state: one row per criterion — id · kind · criterion text · status (color-coded) · covering/added test · evidence grade · note. Color suggestion: covered/test-added green, partial amber, behavior-gap/untestable/doc-disagreement red, open-question/declined grey. Show the `evidenceGrade` (e.g. a small `test-verified` / `reasoning-only` / `spec-asserted` tag) so the reader can see which verdicts are execution-backed. Where a criterion's status changed since the previous run, show the transition (e.g. a small "was: gap" marker) so progress is visible at a glance.
+- A **Code coverage** panel (only when `coverageToolRan`): the baseline → final percentage, the 80% floor, whether it was met (green) or not (amber — **not** red; a shortfall with an accounted remainder is a valid outcome), and the one-line `remainder` accounting for everything still below 100% (tests-added vs untestable-through-surface vs excluded vs awaiting-decision). Make explicit that the floor is a soft target, not a pass/fail gate.
+- A **coverage matrix** table reflecting the CURRENT state: one row per criterion — id · kind · criterion text · status (color-coded) · covering/added test · evidence grade · note. The `coverage`-kind (`COV-`) rows are the Phase 6.5 candidates; render them in their own sub-section (or visually grouped) so the bottom-up coverage findings read separately from the Blueprint criteria. Color suggestion: covered/test-added green, partial amber, behavior-gap/untestable/doc-disagreement red, open-question/declined grey. Show the `evidenceGrade` (e.g. a small `test-verified` / `reasoning-only` / `spec-asserted` tag) so the reader can see which verdicts are execution-backed. Where a criterion's status changed since the previous run, show the transition (e.g. a small "was: gap" marker) so progress is visible at a glance.
 - A **Behavior gaps** section listing each red gap test, the criterion it proves unmet, and its failure output — these are the loudest items.
 - A **Spec/code disagreements** section listing each `doc-disagreement`: the criterion, every conflicting source quoted with its location (including the code's observed behavior), and the decision the user needs to make. These are contradictions, not coverage gaps — keep them visually distinct.
 - A **Flagged for decision** section for open-question / untestable / declined items. For each `untestable` item, show the Phase 4.5 reach attempt (inputs tried + unbypassable blocker) so the "can't be tested" claim carries its evidence.
-- A **Run history** section, newest first: a compact table of every run — run # · datetime stamp · total / covered / tests-added / behavior-gap / doc-disagreement counts · the one-line delta. This is the iteration log.
+- A **Run history** section, newest first: a compact table of every run — run # · datetime stamp · total / covered / tests-added / behavior-gap / doc-disagreement counts · coverage baseline→final % · the one-line delta. This is the iteration log.
 - Stamp the datetime as static text taken from `date "+%Y-%m-%d %H:%M"`. Do NOT call `Date.now()` or `new Date()` in any embedded script — the stamp must be fixed at write time, not recomputed when the file is opened.
 
 **Chat summary** — print after writing the file:
@@ -387,11 +416,16 @@ Criteria: N total
 - Flagged for your decision: N
 - Untestable / needs design (test-verified unreachable): N
 
+Coverage sweep: <baseline>% → <final>%  (floor 80%: met / below — <one-line remainder>)
+- Coverage tests added: N
+- Uncovered & unreachable through surface (test-verified): N
+
 Report: docs/features/{feature}/review-tests.html  (run #N, <datetime stamp>)
 
 <if any behavior gaps>     ⚠ N failing tests were left red — the implementation does not meet these criteria. Listed in the report; consider review-validate to fix.
 <if any disagreements>     ⚠ N spec/code disagreements found — sources contradict each other; listed in the report for your decision.
 <if any flagged>           ⚠ N items need your decision (see report / the questions above).
+<if below floor>           ℹ Coverage landed below 80%; the remainder is accounted for in the report (not a failure — soft floor).
 ```
 
 Do not commit. The user handles commits.
@@ -403,6 +437,7 @@ Do not commit. The user handles commits.
 - **Reach attempts and proofs are scratch work — leave the tree clean.** Phase 4.5 and the implementer delete every test that isn't a kept deliverable and confirm the scope's suite still compiles and runs before returning. A leftover non-compiling test breaks the whole package; an intentionally-red proven-gap test is the one allowed exception and must be recorded as such.
 - **When sources disagree, report — never adjudicate.** The Blueprint's sections (product half, technical half, User Stories), the ADRs, and the code's observed behavior will sometimes contradict each other. Surface every disagreement to the user as a `doc-disagreement` with all sides quoted; do not pick a winner and do not grade coverage on one source's authority. The Blueprint is the statement of *intended* behavior to test against — never evidence of *what the code does*.
 - **Coverage is a surface assertion, not a covered line.** A criterion is covered only when a test enters through the public interface and asserts the behavior. Incidental line execution is not coverage. The coverage tool is a hint, never the verdict.
+- **The 80% floor is a discovery source and a soft target, never a gate (Phase 6.5).** Uncovered code becomes candidate behaviors that run through the same validator/skeptic/probe/implementer discipline — it is not a number to brute-force. Never write an assertion-free test or reach into internals to lift the percentage. A scope that finishes below 80% with an accounted remainder (unreachable-through-surface branches, excluded code, items awaiting a decision) is a complete, valid outcome — the report explains the shortfall rather than failing on it. Coverage-derived (`COV-`) candidates run after the Blueprint criteria are implemented, so the sweep targets only what is still dark.
 - **Never test internals to close a gap.** If a behavior can't be observed through the surface, that's an observability/design finding — expose a safe additive API (testability change) or flag it. Do not write a test that reaches into internals.
 - **Safe additive testability changes are the only unprompted production edits.** Exposing `Stats()`, splitting `main()`→`Run()`, exporting a needed symbol. Anything that changes observable behavior requires a user decision.
 - **Never fix the implementation to make a gap test pass.** A failing gap test proves the implementation doesn't meet a documented criterion. Leave it red, flag it, and stop there. Fixing it is a separate, user-approved step.
