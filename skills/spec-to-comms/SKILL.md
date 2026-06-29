@@ -1,24 +1,28 @@
 ---
 name: spec-to-comms
 description: >
-  Turn a tech spec into a human-facing overview document for developers impacted by the change.
-  Use when you want to communicate a technical change to the broader engineering org: "write a
-  developer communication", "create an overview for devs", "make this accessible to impacted
-  engineers", "create an overview from the tech spec".
+  Turn a feature's design document (its blueprint, or a legacy tech spec) into a human-facing
+  overview document for developers impacted by the change. Use when you want to communicate a
+  technical change to the broader engineering org: "write a developer communication", "create
+  an overview for devs", "make this accessible to impacted engineers", "create an overview from
+  the blueprint".
 ---
 
-# Create a Developer Communication from a Tech Spec
+# Create a Developer Communication from a Blueprint
 
-Read the tech spec for the feature and write a human-facing overview document at
-`docs/features/{feature}/overview.md`. The overview translates the spec's implementation
+Read the feature's design document and write a human-facing overview document at
+`docs/features/{feature}/overview.md`. The overview translates the design's implementation
 detail into what impacted engineers need to know: why the change is happening, what is
 moving, and what their code will look like after.
+
+**Source document:** the feature's `blueprint.md` (or, for older features, `tech-spec.md`).
+"The spec" throughout this skill means whichever of these exists.
 
 ## Environment
 
 | | Claude Code | Claude chat |
 |---|---|---|
-| **Reading the spec** | Read from `docs/features/{feature}/tech-spec.md` | Ask the user to paste the spec |
+| **Reading the spec** | Read from `docs/features/{feature}/blueprint.md` (or the legacy `tech-spec.md`) | Ask the user to paste the design doc |
 | **Writing the overview** | Write to `docs/features/{feature}/overview.md` | Produce as markdown artifact; tell user the intended path |
 | **Supporting docs** | Read any analysis docs in the same `docs/features/{feature}/` directory | Ask the user to paste relevant summaries |
 
@@ -27,7 +31,7 @@ you are in Claude chat.
 
 ## Before writing
 
-Read the tech spec. Also read any supporting analysis documents in the same directory (e.g.,
+Read the design document. Also read any supporting analysis documents in the same directory (e.g.,
 dependency analysis, spike outputs). These often contain findings that clarify domain
 boundaries or constraints that are relevant to impacted developers.
 

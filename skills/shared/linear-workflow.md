@@ -1,7 +1,7 @@
 # Linear Workflow — shared procedure
 
 Canonical procedure for the Linear-id-driven feature workflow, shared by
-`prd-create`, `spec-create`, the PR skill, and `linear-create`. Behavior lives
+`blueprint-create`, the PR skill, and `linear-create`. Behavior lives
 here; skills reference this file instead of copying it.
 
 Human-facing contract (when present in the target repo): `CONTRIBUTING.md` at the
@@ -10,8 +10,8 @@ in the mono-repo.
 
 ## When to run
 
-At the point a skill needs to name the feature directory (`prd-create`: at write
-time; `spec-create`: when locating or creating the feature dir). First check the
+At the point a skill needs to name the feature directory (`blueprint-create`:
+when locating or creating the feature dir). First check the
 section 0 precondition — if Linear isn't in use here, take the plain-slug fallback
 and skip the rest. Otherwise **resolve the Linear id FIRST** — the directory and
 branch are named from it.
@@ -41,7 +41,7 @@ Resolve in order; stop at the first that yields an id:
 2. **Branch** — the current branch matches `ticket/<TEAM>-<NUM>-<slug>`
    (`git rev-parse --abbrev-ref HEAD`). Extract `<TEAM>-<NUM>`.
 3. **Feature dir** — an existing `docs/features/<TEAM>-<NUM>-<slug>/` already holds
-   this feature's docs (the common `spec-create`-after-`prd-create` case). Extract
+   this feature's docs (the common case when revisiting a blueprint). Extract
    the id from the directory name.
 4. **Create** — none of the above matched: create a new issue (section 2).
 
@@ -52,8 +52,12 @@ not, fall through to create.
 
 - **Team:** the sole team is auto-selected (today: `Engineering`, key `ENG`). Ask
   which team only if the workspace has more than one.
-- **Title:** the feature name. **Description:** one or two lines of intent — the
-  PRD/spec carries the detail.
+- **Title:** a plain description of the work — `<project> <what>`, nothing else.
+  **Hard test:** if it contains `(`, `)`, `—`, a separator `-`, `:`, `+`, or `/`,
+  it is WRONG — that punctuation smuggles in a second idea or metadata (lineage,
+  `slice N`/`phase N`, ids). Cut to one plain phrase; the project name's own hyphen
+  (`git-server`) is fine. **Description:** one or two lines of intent (lineage and
+  schedule context go here, never the title) — the PRD/spec carries the detail.
 - **assignee:** `me` — per-developer MCP auth resolves to the acting developer.
 - **state:** `In Progress` — creating the ticket *is* the act of starting work.
 - **labels:** the repo label (section 4).

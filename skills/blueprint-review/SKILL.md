@@ -10,7 +10,7 @@ allowed-tools: Read, Edit, Bash, Agent, AskUserQuestion
 
 Make the Blueprint **buildable**: an engineer (or an LLM planner) can take it and build the right feature without getting stuck on ambiguous contracts, contradictory requirements, missing decisions, or unverifiable acceptance criteria — and without the technical half drifting from the product intent. The review is done when a goal-validation agent confirms this, not when it runs out of findings to file. The skill does not pursue completeness, exhaustiveness, or editorial polish.
 
-Because the product definition and technical design live in one document, this review replaces the entire `prd-review` + `spec-review` + `stories-review` pipeline. The cross-document handoff files (`prd-handoff.md` / `spec-handoff.md`) are gone — product↔technical disagreement is now an internal inconsistency the review resolves directly, not a finding handed to another skill.
+Because the product definition and technical design live in one document, this review replaces the older separate PRD + tech-spec + stories review pipeline. The cross-document handoff files (`prd-handoff.md` / `spec-handoff.md`) are gone — product↔technical disagreement is now an internal inconsistency the review resolves directly, not a finding handed to another skill.
 
 ## How it works
 

@@ -1,6 +1,6 @@
 ---
 name: blueprint-create
-description: Run one continuous back-and-forth design discussion — product definition and technical design together — and write a single Blueprint to docs/features/{feature}/blueprint.md. Use when the user asks to "write a blueprint", "create a blueprint", "design this feature", "scope and design X", or otherwise wants to think through both what a feature must do and how it will be built before implementation. Replaces the separate prd-create / spec-create / stories-create flow with one document and one conversation. Do NOT use for bug fixes or tweaks too small to warrant a design document, or when the user is brainstorming without committing to a document.
+description: Run one continuous back-and-forth design discussion — product definition and technical design together — and write a single Blueprint to docs/features/{feature}/blueprint.md. Use when the user asks to "write a blueprint", "create a blueprint", "design this feature", "scope and design X", or otherwise wants to think through both what a feature must do and how it will be built before implementation. Replaces the older multi-document PRD + tech-spec + stories flow with one document and one conversation. Do NOT use for bug fixes or tweaks too small to warrant a design document, or when the user is brainstorming without committing to a document.
 ---
 
 # Create a Blueprint

@@ -3,7 +3,7 @@ name: deliberate
 description: Spawn parallel advocate sub-agents to deliberate on a high-impact decision, then synthesize
   their arguments into a structured comparison with a recommendation. Use when a decision is central to
   the design, cascades to many other decisions, is hard to reverse, or genuinely uncertain. Triggered
-  automatically by prd-create, spec-create, prd-review, and spec-review when they detect a high-impact
+  automatically by blueprint-create and blueprint-review when they detect a high-impact
   decision, or invoked directly by the user with "deliberate on this" or "/deliberate".
 allowed-tools: Read, Agent, AskUserQuestion
 ---
@@ -154,7 +154,7 @@ The skill checks only the third criterion: **Surprising without context** — wo
 
 If it passes, offer the ADR **immediately** after the deliberation resolves — do not defer to end-of-discussion. The deliberation context is freshest now and produces richer ADR content.
 
-## Integration: Create Skills (prd-create, spec-create)
+## Integration: Create Skills (blueprint-create)
 
 Deliberation integrates into the back-and-forth discussion flow. When the skill is about to present a numbered options block for a question, it first scores the 4 trigger criteria. If 2+ fire:
 
@@ -165,7 +165,7 @@ Deliberation integrates into the back-and-forth discussion flow. When the skill 
 
 If the user declines deliberation, present the standard options block with a recommendation as usual.
 
-## Integration: Review Skills (prd-review, spec-review)
+## Integration: Review Skills (blueprint-review)
 
 Deliberation integrates into Phase 5 (Apply Fixes and Surface Decisions). When the orchestrator is about to present a **design-decision finding** (verdict: Upheld or Confirmed, routed as surface-to-user, priority P0 or P1), it scores the finding against the 4 trigger criteria. If 2+ fire:
 
