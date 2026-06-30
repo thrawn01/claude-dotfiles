@@ -31,6 +31,7 @@ Motivating example (a real Claude-authored test comment):
 - **Journal comments** — embed history in the source: dates, author names, ticket/PR numbers, "added in v2", change logs. Version control owns history (Ousterhout: *"comments belong to the code, not the commit log"*).
 - **What-not-why comments** — narrate what the code mechanically does instead of why it exists (Google: comments *"should not be explaining what some code is doing"*). Diff-authored comments often restate the change as "what".
 - **Doc / README drift** — prose, examples, or flags referencing renamed symbols, removed options, or old behavior the change invalidated.
+- **Dangling cross-references** — a comment points at documentation that won't outlive the code. A reference is only as durable as its *target*: a pointer into an **ephemeral** location — a per-feature or working directory the repo discards once the work lands (e.g. `docs/features/<x>/`, a feature's review-report HTML, a scratch plan/blueprint), the PR/issue thread, or a ticket/decision id whose only definition lives in such a place — points nowhere the day that location is deleted. Tell: a parenthetical id (`(BP-3)`, `(RS-008)`) or `§section` whose meaning a reader can only recover by opening a document *outside* the permanent docs. Contrast with the SPARE list: a pointer into durable documentation (an ADR, a stable decision/design doc kept under `docs/`) is fine — that target is maintained, not disposable. The fix is the same as for any diff-anchored comment: keep the durable reason inline (it usually already is) and drop the dangling pointer, or demote a durable-doc id to a trailing "see also".
 - **PR-description inversion** — the durable *why/purpose* is missing from the PR body while it's full of diff narration (or vice versa: durable reasoning trapped only in the PR thread, where future readers won't find it — Google: *"Explanations written only in the code review tool are not helpful to future code readers."*).
 
 **The "Tells" are a locator, never a finding.** Grepping the change for tell-words is a fine way to *point the blind reviewer at suspects* — but a keyword match is not itself a finding, and the same word is often innocent: *"used to delete the source ID"* (the verb *use*) is FINE; *"this used to write directly"* (temporal) is not; *"now"* meaning *at this point in execution* is FINE, *"now we route through the loop"* is not. Only the blind read of the final file decides. Never report a finding straight from a grep hit, and never inflate the count with regex false positives — the tell list feeds Phase 1's attention, not its verdict.
@@ -42,6 +43,7 @@ Referencing change is **correct** in version-scoped artifacts. Never flag:
 - The PR description / commit message body themselves (they *are* the diff's narration).
 - ADR "Context" / "Consequences" / "Alternatives considered" sections — discussing the prior approach is their job.
 - Comments that name an alternative for a *current* reason ("we don't use a mutex here because single-writer is the invariant") — that's durable why, not diff narration, even though it mentions what's *not* done.
+- In-code pointers into **permanent** documentation — an ADR number, a stable design/decision-log doc kept under `docs/`, a spec section — when the comment's durable reason is already stated inline and the id is just a "see also". (A pointer into a *disposable* location is the opposite case, not spared — see "Dangling cross-references" above.)
 
 The line: does the prose inform a reader who never saw the change, or does it only make sense to someone reviewing the diff? Spare the former.
 
@@ -58,6 +60,7 @@ If on `main`/`master` with no diff and no PR given, ask the user what to review.
 1. Resolve the target and get the **changed-file list** and the **patch** (orchestrator use only).
 2. For each changed file, read its **final, post-change content** (the whole file). This — not the patch — is what the fresh-context reviewer sees.
 3. Partition files into **source** (code with comments/docstrings) and **docs** (`*.md`, README, docs/). Drop pure data/lock files and the spare-list artifacts above from prose review.
+   - While here, learn which documentation locations the repo treats as **ephemeral** vs **permanent** — check the project's ADRs / docs conventions (e.g. a `docs/features/` working tree that the repo's own ADRs slate for eventual removal, vs a durable `docs/design/` decision log). The skeptic gate uses this to sort each in-code doc pointer into durable (keep) or dangling (strip). When the convention isn't documented, ask the user rather than guessing which way a location cuts.
 4. From the patch, note for each source file the **changed/added line ranges**. These define **in scope**: a finding is in scope only if the comment/doc it concerns was *introduced or touched* by this change. The reviewer still judges every comment from a blind read of the final file.
 5. **In-scope vs. pre-existing.** The Stranger Test reviewer reads whole files by necessity — a comment can only be judged with its surrounding code — so it *will* surface valid findings on prose this change never touched (a years-old journal comment, a pre-existing stale comment). Do **not** silently drop these and do **not** attribute them to this change. Confirm a finding's provenance against the changed-line ranges (or `git blame`), then sort it into one of two buckets: **in-scope** (introduced/touched here) or **pre-existing (out of scope)**. Only in-scope findings are auto-fixed (Phase 4); pre-existing ones are reported in their own section (Phase 5) for the user to fix separately or via a whole-file run.
 6. State scope to the user in a few lines: target (branch/PR), files in prose scope, what was spared, and whether this is a diff-scoped run (default) or a whole-file run (everything in the touched files is in scope).
@@ -82,6 +85,11 @@ For every comment, docstring, and (for docs) prose line listed below, judge:
 - For anything not FINE: quote it with file:line, say exactly what unseen thing it
   assumes, and propose a CURRENT-STATE rewrite that preserves the durable "why" while
   removing the temporal/diff framing — or DELETE if there is no durable content.
+- If a comment points at an external document or carries a bare id/`§section`
+  (`(BP-3)`, `RS-008`, "see the blueprint"), name the referenced target explicitly
+  and note whether the comment still reads sensibly WITHOUT the lookup. Do not decide
+  keep-vs-strip — that depends on whether the target is a permanent or disposable doc,
+  which the orchestrator resolves. Just surface the pointer and its target.
 
 Files (final contents):
 <full content of each file>
@@ -147,6 +155,7 @@ List each applied fix as `file:line` with before → after, so the user can eyeb
 - **Tells locate, the blind read decides.** A tell-word grep only points attention at suspects. Never raise a finding from a keyword match alone, and discard regex false positives (the verb *"used to"*, *"now"* meaning *at this point*) before they reach the report.
 - **Preserve the why, strip the when.** A diff-anchored comment usually contains a durable reason wrapped in temporal framing. Rewrite to keep the reason and drop "old/previously/now/on main". Delete only when there is no durable content. Never discard a real rationale.
 - **Spare version-scoped artifacts.** Changelogs, release notes, migration guides, PR/commit bodies, and ADR context sections are *supposed* to reference change. Flagging them is a false positive.
+- **A pointer is only as durable as its target.** Spare in-code references into permanent docs (ADRs, stable design/decision docs under `docs/`) when the durable reason is already inline. Flag references into ephemeral/disposable locations (per-feature working dirs like `docs/features/`, review-report HTML, scratch plans, the PR thread) — they dangle the moment that location is removed, leaving the reader chasing a pointer to nothing. When unsure which a location is, consult the repo's conventions/ADRs (Phase 0) before deciding.
 - **High-signal only.** Apply the maintainer bar — flag at high confidence, stay silent when unsure. This skill earns trust by not nagging about durable comments that merely mention alternatives.
 - **Prose only, never logic.** Edits change comments, docstrings, and docs — never code behavior. If a comment is wrong because the *code* is wrong, report it; don't fix the code (that's `code-review` / `review-validate`).
 - **Don't rewrite the PR body.** Report description gaps; hand the rewrite to `open-pr`.

@@ -7,6 +7,29 @@ You are tasked with producing a **handoff brief** for the current conversation.
 The purpose is to capture enough state that a fresh conversation (new context
 window) can resume the work without re-asking what's been done.
 
+## Step 0: Route — is this a Linear-tracked multi-slice build?
+
+Before writing anything, check whether the dated state belongs in **Linear** rather
+than a file. This is the case when **any** of these hold:
+
+- The work this session is one slice of a larger build tracked in a **Linear
+  project** — a ticket with a `project` (and usually an epic `parentId`).
+- The repo has a `docs/**/handoff.md` that points resumers at **Linear project
+  status updates** (e.g. `services/git-server/docs/handoff.md`).
+
+If so, **stop and invoke `linear-handoff` instead** — for these builds the durable
+resume point is an append-only project status update, not a checked-in (often
+gitignored) file. Writing a file here is the known footgun: it lands in `plans/`,
+nobody reads it, and the Linear update never gets posted.
+
+```
+Skill(skill: "linear-handoff")
+```
+
+Only when the work is **not** tracked in a Linear project (a one-off investigation,
+a personal scratch brief, or no Linear MCP available) continue with the file-based
+handoff below.
+
 ## Step 1: Extract Current-State Facts from the Conversation
 
 Pull out concrete, verifiable facts — not discussion:
