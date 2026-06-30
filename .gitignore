@@ -7,6 +7,7 @@ skills/open-pr/
 skills/review-supergraph-pr/
 skills/verify-go-deps/
 skills/wait-for-master-and-rebuild/
+skills/linear-create/
 
 
 .DS_Store
