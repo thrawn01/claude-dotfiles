@@ -8,6 +8,10 @@ skills/review-supergraph-pr/
 skills/verify-go-deps/
 skills/wait-for-master-and-rebuild/
 skills/linear-create/
+skills/handbook-sync/
+
+# Personal skills (hardcoded local paths, e.g. Obsidian vault)
+skills/yt-transcript/
 
 
 .DS_Store
