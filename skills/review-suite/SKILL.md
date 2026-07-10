@@ -2,12 +2,13 @@
 name: review-suite
 description: "Run the full post-implementation review/hardening pass as one headless pipeline in an
   isolated worktree: code-review -> review-validate -> green-gate -> invariant-test -> review-tests
-  -> review-for-reader, then stop and present a unified report + combined diff for you to merge into
-  the PR branch. Each stage's intentionally-failing tests are t.Skip()'d in place so later stages
-  see a green baseline. Use when the user says 'run the review suite', 'review-suite', 'do the full
-  review pass', or wants the tail of the workflow (validate/invariant/tests/reader) automated after
-  a feature is built. Do NOT use for the design phase (blueprint/goal), for a single review skill
-  (call it directly), or to fix a known list of bugs (use review-validate)."
+  -> review-openapi -> review-for-reader, then stop and present a unified report + combined diff
+  for you to merge into the PR branch. Each stage's intentionally-failing tests are t.Skip()'d in
+  place so later stages see a green baseline. Use when the user says 'run the review suite',
+  'review-suite', 'do the full review pass', or wants the tail of the workflow
+  (validate/invariant/tests/openapi/reader) automated after a feature is built. Do NOT use for the
+  design phase (blueprint/goal), for a single review skill (call it directly), or to fix a known
+  list of bugs (use review-validate)."
 argument-hint: "[feature-dir] [--skip a,b] [--only a,b] [--review-effort high]"
 allowed-tools: [Bash, Read, Edit, Write, Glob, Grep, Agent, Skill]
 ---
@@ -19,12 +20,12 @@ as one **headless** pipeline inside an **isolated git worktree**, then stop and 
 report + combined diff to approve before it merges into your PR branch.
 
 The orchestrator is **this context** (it must stay in the main session so each sub-skill keeps its
-own internal sub-agent fan-out). It runs the five existing skills **unchanged** via the `Skill`
+own internal sub-agent fan-out). It runs the six existing skills **unchanged** via the `Skill`
 tool, enforces a set of standing rules over them, does its own mechanical work (worktree, baseline,
 green-gate, skip-on-red, report) via **Haiku** sub-agents and `Bash`, and never interrupts you
 mid-run. The only stop is at the end, for the merge.
 
-This skill does **not** edit the five sub-skills. They remain byte-for-byte intact and callable on
+This skill does **not** edit the six sub-skills. They remain byte-for-byte intact and callable on
 their own exactly as before. `review-suite` is purely additive.
 
 `AskUserQuestion` is intentionally **absent** from `allowed-tools` — the suite cannot ask you
@@ -35,7 +36,9 @@ anything mid-run by construction. Every would-be question becomes a report entry
 - A Go project (uses `go build` / `go test`; falls back to `make ci` for the full baseline if a
   `ci` target exists).
 - Run **from the PR branch** (a non-default branch with a diff vs `main`/`master`). "Merge into the
-  PR branch" means the branch you are on.
+  PR branch" means the branch you are on. Any uncommitted work on it is **committed to this branch**
+  in Phase 0 before the review starts (see Phase 0.2), so the isolated worktree carries the whole
+  feature.
 - `git` with worktree support.
 
 ## Standing rules (these OVERRIDE any conflicting instruction in a sub-skill)
@@ -59,7 +62,7 @@ While running any stage below, these rules win over the sub-skill's own text:
    (fixed or deferred), record everything the Report format (below) needs for that bug's ticket —
    assign the next `RS-NNN` id and write down the explainer, evidence (test output, code excerpt),
    blast radius, and the pause condition/default taken — while the finding's full context is still
-   in front of you. Phase 7 only assembles these tickets; it must never have to re-research a bug.
+   in front of you. Phase 8 only assembles these tickets; it must never have to re-research a bug.
 
 ## Skip-on-red (the mechanism that lets the stages run back-to-back)
 
@@ -107,6 +110,9 @@ stage changed only the file *types* it is allowed to, else **HALT** and report:
   injected mutation shows up here -> halt).
 - **review-tests**: test files + minimal additive testability source edits + its `.html`; tree
   **compiles** (`go build ./... && go vet ./...`) — broken compile -> halt; no leaked scratch tests.
+- **review-openapi**: only OpenAPI spec file(s) edited — descriptions/examples, no schema, path,
+  or field changes; the spec linter passes and the generated-code target still builds (doc-only,
+  codegen-neutral) — either failing -> halt.
 - **review-for-reader**: only comment/doc/prose edits, no logic changes.
 
 The skip-on-red edits (test files only) are the orchestrator's and are allowed; run the sanity
@@ -197,27 +203,38 @@ reconstructed from memory at report time.
 `$ARGUMENTS` may contain a feature-dir path and flags:
 - bare path -> feature directory (for stages 4–5).
 - `--skip a,b` / `--only a,b` -> stage selection over
-  {`code-review`,`review-validate`,`invariant-test`,`review-tests`,`review-for-reader`}.
+  {`code-review`,`review-validate`,`invariant-test`,`review-tests`,`review-openapi`,
+  `review-for-reader`}.
 - `--review-effort low|medium|high` -> default `high`.
 
 ## Phase 0: Setup
 
 1. Confirm a non-default branch with a diff vs `main`/`master`; if not, stop and explain.
-2. **Build gate:** `go clean -testcache && go build ./...`. If it does NOT build, **ABORT** — you
+2. **Commit outstanding work on the current branch first.** The worktree is created from a commit,
+   so any uncommitted feature code — staged, unstaged, **or untracked** (new test files, new
+   packages) — would be invisible to the review. If `git status` is not clean, stage everything
+   (`git add -A`) and commit it to the current branch before creating the worktree, with a clear
+   message (e.g. `review-suite: commit working tree before review`) and **no Co-Authored-By / no
+   Claude attribution**. Record the SHA and report it (you committed the user's in-flight work — say
+   so). If the tree is already clean, skip. This replaces any patch/stash transfer into the
+   worktree: the feature must live in a commit the worktree can check out.
+3. **Build gate:** `go clean -testcache && go build ./...`. If it does NOT build, **ABORT** — you
    cannot review a non-building branch.
-3. **Baseline:** the project CI command if present (`make ci`), else `go test ./... -race -count=1`.
+4. **Baseline:** the project CI command if present (`make ci`), else `go test ./... -race -count=1`.
    Record the passing set. (Skipped tests count as green.)
-4. Create the worktree off the current branch and switch all subsequent work into it:
+5. Create the worktree on a **fresh review branch off the current branch's HEAD** and switch all
+   subsequent work into it (the current branch itself cannot be checked out in a second worktree, so
+   the review gets its own branch that you merge back in Phase 8):
    ```
-   git worktree add ../worktrees/review-suite-<branch> <current-branch>
+   git worktree add -b review-suite-<branch> ../worktrees/review-suite-<branch> HEAD
    ```
-   Note `<base>` = `origin/main` (or `master`) and `<stage-start-ref>` = the worktree HEAD at the
-   start of each stage. Bash cwd persists between calls — operate from the worktree path with
-   absolute paths.
-5. Resolve the feature directory: explicit arg > inference from conversation (like `goal-from-spec`)
+   Replace any `/` in `<branch>` with `-` for the branch and directory names. Note `<base>` =
+   `origin/main` (or `master`) and `<stage-start-ref>` = the worktree HEAD at the start of each
+   stage. Bash cwd persists between calls — operate from the worktree path with absolute paths.
+6. Resolve the feature directory: explicit arg > inference from conversation (like `goal-from-spec`)
    > none. If unresolved or ambiguous across multiple `docs/features/*`, mark stages 4–5 to
    **auto-skip** and note it.
-6. Determine applicable stages (stage selection, below).
+7. Determine applicable stages (stage selection, below).
 
 ## Phase 1: code-review
 
@@ -266,7 +283,21 @@ to report defaults; independent genuine gaps are still implemented.
 Then: **skip-on-red** the behavior-gap tests -> tree-sanity check incl. **halting** compile check
 -> commit the stage.
 
-## Phase 6: review-for-reader
+## Phase 6: review-openapi  (auto-skip if the accumulated diff touches no OpenAPI spec)
+
+Gate: `git diff --name-only <base>...HEAD` from the worktree matches an `openapi.yaml` (any
+`api/**` spec). No match -> auto-skip and log.
+
+Invoke `Skill(review-openapi)` on the touched spec(s). It edits spec descriptions/examples in
+place per its rules (consumer-self-containment, no self-correction machinery, per-endpoint
+exhaustive error vocabularies verified against the error emitters, worked request/response example
+pairs in one coherent example world). Findings become report tickets (Advisory or Auto-fixed) per
+standing rule 5. A behavior doc/code disagreement it surfaces is a **Deferred** ticket, never a
+silent doc edit.
+
+Then: tree-sanity check (spec file(s) only; linter + codegen-neutral gate) -> commit the stage.
+
+## Phase 7: review-for-reader
 
 Invoke `Skill(review-for-reader)` on the **worktree diff** `git diff <base>...HEAD` (the full
 accumulated diff incl. suite tests) — never `gh pr diff`. It auto-rewrites confident prose findings;
@@ -275,7 +306,7 @@ advisory and go into the report. Leave suite `t.Skip(...)` reasons untouched.
 
 Then: tree-sanity check (prose/comment edits only) -> commit the stage.
 
-## Phase 7: report, then stop for merge
+## Phase 8: report, then stop for merge
 
 1. Write per-skill HTML reports where the skills already place them, under
    `docs/features/<feature>/` (`invariant-test.html`, `review-tests.html`), and **commit them** so
@@ -308,7 +339,7 @@ Then: tree-sanity check (prose/comment edits only) -> commit the stage.
 
 ## Models
 
-- The five sub-skills run via `Skill` in this context and keep their own internal **Sonnet** fan-out
+- The six sub-skills run via `Skill` in this context and keep their own internal **Sonnet** fan-out
   (unchanged).
 - The orchestrator's own mechanical work — baseline/green-gate runs, skip-on-red parsing+editing,
   tree-sanity checks, report assembly — is delegated to **Haiku** sub-agents.

@@ -1,8 +1,9 @@
 # Linear Workflow — shared procedure
 
 Canonical procedure for the Linear-id-driven feature workflow, shared by
-`blueprint-create`, the PR skill, and `linear-create`. Behavior lives
-here; skills reference this file instead of copying it.
+`blueprint-create`, `linear-start`, `linear-handoff`, and the ticket-creation
+and PR skills. Behavior lives here; skills reference this file instead of
+copying it.
 
 Human-facing contract (when present in the target repo): `CONTRIBUTING.md` at the
 repo root, and `docs/features/ENG-1-linear-workflow/board-report-system-spec.md`
