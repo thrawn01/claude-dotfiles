@@ -133,8 +133,8 @@ rather than guessing — the routing in §6 depends on it.
 
 ### Bug → start immediately
 
-Begin work in the worktree now. Reproduce, then fix. If a `/fix-issue`-style TDD rigor is
-warranted, write a failing surface test first (see the `surface-testing` skill), then implement.
+Begin work in the worktree now. Reproduce, then fix. If TDD rigor is warranted, write a failing
+surface test first (see the `surface-testing` skill), then implement.
 Keep the orchestration light — for a clear bug you do not need a design phase. Report the root
 cause and the fix as you go.
 
