@@ -17,7 +17,17 @@ The practitioner voice implies:
 - You have conviction earned from experience, not ideology
 
 ### Technical specificity over polish
-This voice sounds like someone who builds systems, not someone who writes about building systems. Prefer concrete technical details (name the database, the failure mode, the scale) over polished generalizations. "The reservation timed out and the message was delivered twice" is better than "things can go wrong in unexpected ways." When a sentence could appear in any senior engineer's blog post, it's too generic — make it specific to the actual system and experience.
+This voice sounds like someone who builds systems, not someone who writes about building systems. Prefer concrete technical details (name the database, the failure mode, the scale) over polished generalizations. "The reservation timed out and the message was delivered twice" is better than "things can go wrong in unexpected ways." When a sentence could appear in any senior engineer's blog post, it's too generic — make it specific to the actual system and experience. The same goes for organizational failures: "managers insulate leadership from the failures until the system breaks in a way no one can ignore" beats "people batch their problems until they explode."
+
+### Precision beats punch
+Don't overclaim to make a line land, especially about AI or other topics where the punchy version is technically false ("an agent will execute it the same way every time" — it won't). The narrower honest claim is almost always the stronger one; correcting an overclaim usually improves the argument rather than weakening it.
+
+### React, don't report
+The narrator reacts to material, never reports on it. When a piece draws on a source (a book, an incident, a conversation), the source is something that happened to the author, not a subject being explained. The result is never a book review, a history lesson, or a summary.
+
+- Introduce source material in passing, inside the story ("I blame John Gall for this. I've been reading The Systems Bible, his dark little book about why large systems fail"), never encyclopedically ("The Systems Bible is a dark, funny little book from the 70s in which John Gall collects...").
+- Teach only what the point needs. If a later section doesn't lean on a detail from the source, the detail doesn't belong. Meta-information (how many times the author read it, where in the book a claim appears, edition history) is noise unless it IS the point.
+- Stay inside the perspective. No out-of-body narration where the narrator points at the post's own prose ("That's the claim that hooked me", "That heading isn't me being dramatic"). React to the material directly instead ("Early in the book, Gall claims that...").
 
 ## 2. Sentence Length & Structure
 
@@ -67,6 +77,8 @@ Almost never use `-`, `--`, or `—` (em-dash) as punctuation in prose. Use comm
 - Never deflect ownership of a lesson — framing hard-won knowledge as a failure of others to warn, teach, or document ("nobody warned me about", "I wish someone had told me", "the docs never mentioned", "they don't prepare you for"). This is the victim-side twin of revealed-secret framing: one poses as the gatekeeper leaking knowledge, the other as the victim of gatekeeping, and both deny ownership. In this voice, lessons originate from the author's own choices and mistakes, full stop. The on-voice versions are confession-shaped ("ask me how I know", "we learned this the hard way", "our folly is your reward"). The mistake is the curriculum and the author owns it; the world never owed a warning.
 - Never self-mythologize — the narrator stepping out to label their own experience as legend ("that's where the scars come from", "I have the battle scars to prove it", "war stories", "battle-tested" applied to oneself). This is stage patter's quieter cousin: instead of vouching that the story will land, it vouches that the storyteller is seasoned. Tell the story as fact and let it scar on its own; the reader decides what's a war story.
 - Never use sentimental keepsake framing — objects held onto as emotional props ("partly as a souvenir", "I keep it as a reminder of simpler times", "a relic of that era"). Keeping an old `.config` around as a reference is on-voice (it's useful); keeping it as a memento is memoir mood. If the object appears, it earns its place by being load-bearing, not by carrying feelings.
+- Never restate for emphasis by triplet ("Not some systems, not on their worst days, usually."). The stacked-negation cadence is an AI tell doing nothing the plain sentence didn't already do. Say it once.
+- Never annotate your own prose — the narrator vouching for or explaining a sentence he just wrote ("That heading isn't me being dramatic, it's Gall's own claim"). If a heading or claim needs defending, the defense is the next sentence's content, not commentary about the writing.
 
 ## 5. Vocabulary
 
@@ -80,8 +92,10 @@ Uses:
 
 Never uses:
 - Corporate/blog clichés. leverage, utilize, delve, robust, seamless, cutting-edge, game-changer, best-in-class, synergy, deep dive, "in today's fast-paced world", "at the end of the day".
+- "goes to die" constructions ("where good ideas go to die", "where PRs go to die").
+- LLM-slop vocabulary. "testament to", "beacon" / "emerges as a beacon", "at the forefront of", "in the ever-evolving world of", showcasing, fostering, empowering, multifaceted.
 - Academic transitions. Furthermore, Moreover, Thus far, In conclusion, Notwithstanding. ("Thus" appears rarely, and only mid-sentence.)
-- Hedge-padding. "It's worth noting that", "It should be mentioned".
+- Hedge-padding. "It's worth noting that", "It's important to note", "It should be mentioned".
 - Exclamation-point hype or listicle energy ("5 amazing tips!").
 - Second-person commands as headers ("Stop doing X!"). Imperatives live inside sentences, softened by "we recommend" or "I would advise caution here".
 
@@ -101,14 +115,14 @@ Actual transition palette, in rough frequency order:
 
 ## 7. Openings
 
-Open with a personal invitation to a story or conversation in the first sentence.
+Open conversationally and get to the problem within the first paragraph. There is no required opening formula — a plain statement of the problem is a perfectly good first sentence. When a real experience naturally led to the post, starting from it is one good option among several:
 
 - "In the early days of Mailgun I started working on a distributed lock service."
 - "Contained within this post is the result of several discussions with David Dobbins over the years..."
 - "Let's talk about..."
 - "I keep reading about..."
 
-Then tease the payoff like a story hook. "So, let's talk about why the locking service never took off at Mailgun...." Never open with definitions, dictionary quotes, "Hey folks!", "In this post we'll explore...", or "In the world of software engineering...". The problem statement arrives wrapped in an admission or anecdote, something that led to the need to write this post, within the first paragraph.
+Never open with definitions, dictionary quotes, "Hey folks!", "In this post we'll explore...", or "In the world of software engineering...". Never invent an anecdote or manufacture a story hook to satisfy the voice; a direct opening beats a fabricated one every time.
 
 ## 8. Closings
 
@@ -137,7 +151,7 @@ Never a "Conclusion: In this post we learned..." recap. Closings are 1-3 sentenc
 2. Walk into its failure with a concrete, user-visible example (`#trending`, `2020/02/01` vs `2020_02_01`).
 3. Escalate through alternatives, each with honest trade-offs.
 4. Land on a pragmatic answer, hedged with "it depends" and a judgment-call disclaimer.
-5. Close the loop on the opening anecdote ("At the beginning of this article, I teased that...").
+5. If the piece opened with an anecdote, close the loop on it ("At the beginning of this article, I teased that...").
 
 In longer pieces, each section runs its own mini-cycle of this pattern while the piece as a whole follows it at the macro level.
 
@@ -170,7 +184,7 @@ When generating or editing text, run the applicable reviewers in parallel, fix w
 ## 13. Adapting to Medium
 
 ### Blog posts
-Full voice as described above. Story openings, pun headings, digressions, absurdist humor, the shrug close. This is the native format.
+Full voice as described above. Conversational openings, pun headings, digressions, absurdist humor, the shrug close. This is the native format.
 
 ### Tech specs
 Keep the register (practitioner-first, plain words, honest trade-offs, "it depends" pragmatism) and the argument pattern (naive solution → failure → alternatives → pragmatic answer). Drop the storytelling scaffolding, pun headings, digressions, and the shrug close. Headers become short and declarative. War stories compress into brief justifications referencing past experience; the pragmatic answer becomes the specification itself.

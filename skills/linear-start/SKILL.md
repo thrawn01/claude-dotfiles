@@ -67,18 +67,18 @@ handoff state. If you are *continuing* an in-flight build or a long-running tick
 only to set up the workspace. Run `/linear-resume <project-or-ticket>` first when resuming; use this
 skill to begin a ticket whose next-step is already decided.
 
-## 3. Advance the ticket status (confirm first)
+## 3. Advance the ticket status
 
-Updating Linear is an outward write — show the user what you intend to change, get a nod, then
-write. Follow the shared advance-never-regress rules
-(`~/.claude/skills/shared/linear-workflow.md` §3):
+Advancing the status is the whole point of starting a ticket — do it without asking. Follow the
+shared advance-never-regress rules (`~/.claude/skills/shared/linear-workflow.md` §3):
 
 - **Status:** if the current status type is `backlog` or `unstarted` (Backlog / Todo), set
   **In Progress**. If already `started`/`completed`, leave it.
 - **Assignee:** if unassigned, set `me`. If assigned to someone else, leave it — never steal an
-  assignee; instead note it and ask whether to proceed.
+  assignee; this is the one case where you stop and ask before proceeding.
 
-Use `mcp__claude_ai_Linear__save_issue` to apply the change after confirmation.
+Use `mcp__claude_ai_Linear__save_issue` to apply the change. Report what you changed in the §Completion
+handoff rather than asking for a nod first.
 
 ## 4. Verify the workspace
 
@@ -93,10 +93,12 @@ git rev-parse --abbrev-ref HEAD
   expected branch: "This session isn't on the ticket's branch. Run `claude-branch <gitBranchName>`
   (or your worktree wrapper) and invoke `/linear-start` from that session."
 
-**Freshness check (non-blocking):** a wrapper may have created the branch off a stale local HEAD.
-After `git fetch origin`, if the branch has no commits of its own and is behind the default branch
-(`git rev-list --count HEAD..origin/<main>` > 0), offer to move it onto `origin/<main>` before
-starting. Skip silently if it's current or already has work on it.
+**Freshness check (automatic):** a wrapper may have created the branch off a stale local HEAD.
+After `git fetch origin`, if the branch has **no commits of its own** and is behind the default
+branch (`git rev-list --count HEAD..origin/<main>` > 0), move it onto `origin/<main>`
+(`git reset --hard origin/<main>`) without asking — always start on current main. Skip silently if
+it's already current. If the branch **has commits of its own** and is behind, don't reset (that
+would lose work) — surface it and ask.
 
 ## 5. Classify the work
 
