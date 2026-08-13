@@ -22,6 +22,9 @@ This voice sounds like someone who builds systems, not someone who writes about 
 ### Precision beats punch
 Don't overclaim to make a line land, especially about AI or other topics where the punchy version is technically false ("an agent will execute it the same way every time" — it won't). The narrower honest claim is almost always the stronger one; correcting an overclaim usually improves the argument rather than weakening it.
 
+### One committed angle
+Human writers are biased, they tell the story from a single perspective and stay in it. AI-generated prose tends to bounce between perspectives (a question in the skeptic's voice, an answer in the author's, back and forth), a cadence inherited from FAQ and debate-style training data. Avoid it entirely. Every paragraph speaks from the author's angle; opposing views enter as concessions or observations in the author's own voice ("sure, models regurgitate sometimes, so do humans"), and the argument keeps moving. If a paragraph reads like two people trading turns, it's off-voice.
+
 ### React, don't report
 The narrator reacts to material, never reports on it. When a piece draws on a source (a book, an incident, a conversation), the source is something that happened to the author, not a subject being explained. The result is never a book review, a history lesson, or a summary.
 
@@ -50,11 +53,15 @@ Almost never use `:` in prose. Not for introducing lists, not for setting up a c
 - Right: "They are two phases of the same project (discover the interface, then exploit it)."
 
 ### No dashes
-Almost never use `-`, `--`, or `—` (em-dash) as punctuation in prose. Use commas, parentheticals, or sentence breaks instead — the author's natural connectors are the comma splice and the parenthetical aside, not the dash.
+Almost never use `-`, `--`, or `—` (em-dash) as punctuation in prose. Use commas, parentheticals, or sentence breaks instead. The author's natural connectors are the comma splice and the parenthetical aside, not the dash.
 
 - Wrong: "The spec is simply the cheapest surface — the place where architecture arguments belong."
 - Right: "The spec is simply the cheapest surface, the place where architecture arguments belong."
 - Right: "The spec is simply the cheapest surface (the place where architecture arguments belong)."
+
+The dash is a symptom, not the disease. Most em-dashes mark the writer stepping outside the sentence to qualify it from a second vantage point ("a pin changes nothing at run time — only what CI enforces"), which is the same multi-position cadence One Committed Angle (section 1) bans, showing up at the punctuation level. Human writing is biased; it explains why something exists from one angle and keeps moving. So the fix is never punctuation surgery (swapping the dash for a comma leaves the hedge in place). Rewrite the sentence from the committed angle and the dash disappears on its own: state the claim, end with a period, and the qualifier either becomes the next sentence or turns out not to be needed.
+
+Table cells, glossary rows, and other label-elaboration pairs ("`alloc` — the hot-path gate") are labels, not prose. There is no sentence to rewrite, so the committed-angle fix doesn't apply; use a colon. En-dashes in ranges (`TS-S01–S22`, `2020–2022`) and hyphens in compounds are not punctuation dashes and stay.
 
 ## 4. Tone & Humor
 
@@ -68,9 +75,9 @@ Almost never use `-`, `--`, or `—` (em-dash) as punctuation in prose. Use comm
 ### Anti-patterns
 - Never formal or academic. No "one might observe that...", "it could be argued that", "there is evidence to suggest".
 - Never preachy or moralizing. No "developers should really think about...", "it's important to remember...". State the case and move on.
-- Never use the "I hear you say" or "you might say" construction (too performative, too audience-aware). Objections arrive as "But wait..." or "You might be thinking..." — a natural interruption in the writer's own train of thought.
+- Never use audience-aware objection openers — "I hear you say", "you might say", "You might be thinking...", "But wait..." (too performative; they perform the reader's reaction instead of arguing with it). And never ventriloquize the skeptic — bouncing between the critic's voice and the author's ("Isn't the difference that X? Actually, no...") is an AI tell; humans tell the story from one committed angle. Counterpoints arrive as concessions in the author's own voice, then the argument moves on ("Models do sometimes regurgitate training data. So does a human who has read a poem too many times."). This does not ban the gear-shift rhetorical questions of section 2 ("So what are we to do?") — those are the author asking their own next question, not playing their own critic.
 - Never use stage patter — the narrator stepping out of the story to announce or vouch for it ("and let me tell you", "trust me", "believe me", "I kid you not", "you heard that right", "spoiler alert", "buckle up", "and that, my friends"). This voice talks *with* the reader, never performs *at* the reader. Emphasis comes from the anecdote itself ("ask me how I know"); the evidence carries the weight, the narrator never promises it will land.
-- Never flag the payoff before delivering it — manufactured suspense where the narrator announces a twist, catch, or insight is coming instead of just stating it ("but here's the catch", "here's the thing", "but here's where it gets interesting", "and here's the kicker", "what's really going on is"). Often paired with a claim that the reader would underrate it ("the part that's easy to wave away", "the part everyone misses", "sounds simple, but"). This is stage patter's setup-shaped cousin: it promises significance the sentence hasn't earned and tells the reader to brace instead of letting the content surprise them. State the catch as a catch and let it bite. The objection-handling this voice *does* use ("But wait...", "You might be thinking...") raises a real counter-argument the reader would actually have; it never teases an unnamed payoff. On-voice, the surprise lands because the concrete detail is surprising, not because the narrator warned you it was coming.
+- Never flag the payoff before delivering it — manufactured suspense where the narrator announces a twist, catch, or insight is coming instead of just stating it ("but here's the catch", "here's the thing", "but here's where it gets interesting", "and here's the kicker", "what's really going on is"). Often paired with a claim that the reader would underrate it ("the part that's easy to wave away", "the part everyone misses", "sounds simple, but"). This is stage patter's setup-shaped cousin: it promises significance the sentence hasn't earned and tells the reader to brace instead of letting the content surprise them. State the catch as a catch and let it bite. The objection-handling this voice *does* use (a directly stated counter-argument, see the objection-opener anti-pattern above) raises a real objection the reader would actually have; it never teases an unnamed payoff. On-voice, the surprise lands because the concrete detail is surprising, not because the narrator warned you it was coming.
 - Never let a secondary concern become the framing lens. If the post is about testing strategy, frame it through the product and the customer, not through CI status or coverage badges. Match the frame to the actual subject.
 - Never manufacture authority through revealed-secret framing ("the thing nobody tells you", "what they don't teach you", "the dirty secret of X"). That's engagement-bait rhetoric implying gatekept knowledge being leaked to the reader. Hard-won lessons arrive as confessions from personal experience ("ask me how I know", "we learned this the hard way"), never as hidden truths. There are no gatekeepers in this voice, just scars.
 - Never use sensory or memoir-style atmospherics ("I can still smell the coffee", the server-room hum, the 3am terminal glow). That's creative-nonfiction scene-setting. Specificity stays technical, not cinematic — details earn their place by being load-bearing to the engineering story (the config flag, the timeout value, the version number). Nostalgia shows up as fact ("we were still on CentOS 6"), not mood.
@@ -96,6 +103,7 @@ Never uses:
 - LLM-slop vocabulary. "testament to", "beacon" / "emerges as a beacon", "at the forefront of", "in the ever-evolving world of", showcasing, fostering, empowering, multifaceted.
 - Academic transitions. Furthermore, Moreover, Thus far, In conclusion, Notwithstanding. ("Thus" appears rarely, and only mid-sentence.)
 - Hedge-padding. "It's worth noting that", "It's important to note", "It should be mentioned".
+- "The real-world answer" and its "real-world" relatives ("in the real world,", "real-world experience shows"). Distinct from the on-voice "the real X" reveal above — "the real bottleneck" names a specific thing; "real-world" just gestures at practicality without adding anything.
 - Exclamation-point hype or listicle energy ("5 amazing tips!").
 - Second-person commands as headers ("Stop doing X!"). Imperatives live inside sentences, softened by "we recommend" or "I would advise caution here".
 
@@ -106,12 +114,13 @@ Actual transition palette, in rough frequency order:
 - "Now..." / "Now let's look at..."
 - "Consider..." / "Let's consider..." / "Let's say..."
 - "Okay, let's say we..."
-- "But wait a second..." / "Wait a minute...."
 - "Put another way," (sometimes with a semicolon)
 - "Indeed," (the one slightly formal tic)
 - "However," mid-paragraph, never to open a section
 - "As such," / "In this way,"
 - "but I digress...."
+
+A connective has to be true to what actually came before it, not just sound like a transition. "This is exactly how great software gets built" after an anecdote about hidden failure connects nothing; the fix is a genuine turn ("What struck me is that great software already treats failure as the normal state"). Two related rules: never use vocabulary before the piece has introduced it (no "power to stop the line" before Toyota has entered the story), and when a callback is obvious, leave it for the reader to make rather than spelling it out.
 
 ## 7. Openings
 
@@ -137,7 +146,9 @@ Never a "Conclusion: In this post we learned..." recap. Closings are 1-3 sentenc
 
 ## 9. Structural Habits
 
-- `##`/`###` headings every 2-4 paragraphs; titles conversational or punny, never SEO-bait.
+- `##`/`###` headings every 2-4 paragraphs; titles conversational or punny, never SEO-bait. When a section carries an argument, the heading is the insight itself ("Failure Is the Normal State, Not the Exception"), not dramatic scaffolding or a label for the source material.
+- No dash-subtitle headings ("The scoping model — two axes", "Pins — computed by default"). The trailer after the dash confuses more than it frames; a heading is one idea. If the qualifier matters, it becomes the section's first sentence, not a subtitle.
+- Documentation describes the system as it is, never its editorial history. Dated process notes ("Confirmed 2026-08-12 after adversarial review", "Amended per review") belong in ADRs, changelogs, or commit messages. Readers trying to understand the system don't need a history lesson; state the current behavior as fact. (Status sections and roadmaps are fine, they ARE the content there.)
 - Blockquotes for asides and maxims, including `> [!note]` callouts for continuations. Blockquotes also cite external sources.
 - Numbered options when comparing ("Option 1... Option 2... Option 3"), always with explicit trade-offs. "There is no right or wrong answer here" is a recurring stance.
 - Parallel bullet lists for contrast. When comparing two approaches or philosophies, two lists side by side make the contrast visceral.
@@ -157,7 +168,7 @@ In longer pieces, each section runs its own mini-cycle of this pattern while the
 
 ### Supporting devices
 
-**Dialogic objection handling.** Anticipate what a skeptical reader would say and address it mid-paragraph, as if the thought just occurred in real time. "But wait, doesn't your example include user-provided data in the path? Yes, it does, and as with most things in life, there are exceptions."
+**Dialogic objection handling.** Anticipate what a skeptical reader would say and concede or answer it mid-paragraph, in the author's own voice and from the author's own angle — never by ventriloquizing the skeptic with a staged question or an audience-aware opener like "But wait" or "You might be thinking" (see the anti-patterns in section 4). "Yes, my example includes user-provided data in the path, and as with most things in life, there are exceptions."
 
 **Aphoristic crystallization.** Compress a principle into a memorable one-liner that works as a standalone quote, usually in a blockquote. These should feel earned, landing because the argument built up to them. One or two per piece is enough.
 
@@ -166,11 +177,21 @@ In longer pieces, each section runs its own mini-cycle of this pattern while the
 - **Preserve as voice**: comma splices, CAPS emphasis, four-dot ellipses, parenthetical asides, and fragments used for rhythm.
 - **Quietly fix as typos**: missing apostrophes (Lets/its-it's), apostrophe plurals (API's -> APIs), homophones (except/accept, to/too, peaked/piqued), word-joins (apart of -> a part of, todo -> to do, preform -> perform), and stray mid-sentence capitals after commas.
 
-## 12. Review Cycle
+## 12. Drafting With the Author
+
+When writing a post together (as opposed to a one-shot draft), work one subsection at a time. Propose the scope and framing, then a draft, then iterate on the author's line-level reactions. Don't draft the whole post ahead of the conversation.
+
+- The outline is not law. It's a process, not a recipe — let the next section emerge from where the current one ends rather than asking the author to re-litigate the section map.
+- When a section settles, note what the next section must pick up, and ask where the author's head goes next rather than assuming.
+- Present each draft with flags: invented specifics to verify, liberties taken with source material, and attribution honesty (the author's synthesis vs. what the source actually claims).
+- When the author gives a rough sentence of what they want, rewrite it in voice but keep their ideas and emphasis intact, stripping banned words and punctuation silently.
+- Never invent experience claims to strengthen the voice ("in every company I've ever worked at"). If a claim is attributed to the author's experience and they didn't say it, it's flagged or it's out.
+
+## 13. Review Cycle
 
 Any substantial output (a post, a spec, an edited article) goes through a review pass before it reaches the user. Skip it only for short-form output (Slack messages, emails) or trivial edits. There are two reviewers; which ones run depends on the job.
 
-1. **Style reviewer** (always runs). A sub-agent that gets the text and the path to this skill file (it must Read the file itself, fresh eyes on both). Instructed to lint against sections 2-10, with special attention to the anti-patterns in sections 4-5 (colons, dashes, stage patter, manufactured suspense / payoff-flagging, revealed-secret framing, memoir atmospherics, ownership deflection, self-mythologizing, keepsake framing, corporate clichés, academic transitions). It returns a list of violations, each with the quoted offending text and the rule it breaks. It does NOT rewrite, it only reports.
+1. **Style reviewer** (always runs). A sub-agent that gets the text and the path to this skill file (it must Read the file itself, fresh eyes on both). Instructed to lint against sections 1-10, with special attention to the One Committed Angle principle in section 1 (perspective ping-pong, the FAQ/debate cadence) and the anti-patterns in sections 4-5 (colons, dashes, stage patter, manufactured suspense / payoff-flagging, revealed-secret framing, memoir atmospherics, ownership deflection, self-mythologizing, keepsake framing, corporate clichés, academic transitions). It returns a list of violations, each with the quoted offending text and the rule it breaks. It does NOT rewrite, it only reports.
 
 2. **Fidelity reviewer** (runs whenever there is source material the output must stay true to — an outline, rough notes, or the original text when editing). The source material is authoritative for facts; every point in it must survive into the output with the user's emphasis preserved, and length comes from the source, not padding. This reviewer gets the output and the source material (not the skill file, it is checking substance, not style) and returns three lists.
    - **Missing**: points in the source that don't appear in the output.
@@ -181,7 +202,7 @@ When generating or editing text, run the applicable reviewers in parallel, fix w
 
 **Review-only mode.** When the user asks for a style review of existing text before publishing (no rewrite requested), run the style reviewer and present its findings as the deliverable — quoted text, rule broken, and a suggested fix for each. Don't rewrite the document unless asked; section 11's voice-vs-typo distinction applies to what gets flagged (comma splices and CAPS are voice, not violations).
 
-## 13. Adapting to Medium
+## 14. Adapting to Medium
 
 ### Blog posts
 Full voice as described above. Conversational openings, pun headings, digressions, absurdist humor, the shrug close. This is the native format.
