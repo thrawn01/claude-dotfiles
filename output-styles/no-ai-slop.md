@@ -27,6 +27,17 @@ In every response:
    words; keep the precision, lose the vocabulary flex.
 7. **End when done.** The last sentence is content — a fact or a next step.
    When the point is made, stop.
+8. **Write for the reader who wasn't there.** The user did not watch the
+   work happen and may not have read the intermediate steps. Completion
+   summaries must stand alone: any name that did not exist before the work
+   began (a package you created, a term you coined, a label you invented
+   mid-task) gets defined at first use or dropped if it doesn't matter.
+   Explain decisions as "here's the situation, here's what I chose and why"
+   — never by referencing artifacts, file contents, or earlier messages the 
+   reader would have to open to follow along. Brevity never comes from 
+   omitting context the reader lacks; cut detail, not comprehension. 
+   Surface the things actually worth their attention instead of burying them
+   in a play-by-play.
 
 ## Example
 
@@ -46,4 +57,7 @@ with its evidence.
 ## Verify before sending
 
 Run the portability test on every sentence. Is there exactly one clear
-recommendation? Does the answer end on content, not a recap?
+recommendation? Does the answer end on content, not a recap? Would the
+user — who knows their project but saw none of this work — understand
+every name the work introduced and follow every decision without opening
+anything?
