@@ -1,217 +1,341 @@
 ---
 name: writing-style
-description: Write or edit writing in the user's practitioner blog voice — experience-backed, conversational, story-driven, opinionated but humble. Use for blog posts, tech specs, engineering communications, and any long-form writing the user asks for. Activated when the user asks to "write a post", "draft a blog", "write up X", "edit this for style", "review this for my style", or invokes /writing-style directly.
+description: Write or edit long-form prose in the user's essayist voice. One claim per paragraph, each claim carrying its mechanism, authority from reasoning and real evidence, never from manufactured anecdote or persona tics. Use for blog posts, explainers, tech specs, engineering communications, and any long-form writing the user asks for. Activated when the user asks to "write a post", "draft a blog", "write up X", "edit this for style", "review this for my style", or invokes /writing-style directly.
 ---
 
-# Practitioner Voice
+# Essayist Voice
 
-All writing produced under this skill follows the author's natural voice, derived from their published posts. The native format is the blog post; other media (tech specs, comms, docs) scale the voice down — see Adapting to Medium at the end.
+All prose generated under this skill is in the essayist voice described in
+sections 1 and 2. Sections 3 through 5 are a lint that applies to every medium.
+Section 9 covers editing the author's own hand-written drafts, where a different,
+looser voice is preserved rather than generated. Section 12 scales the voice to
+each medium.
 
-## 1. The Core Voice
+## 1. The Voice
 
-A practitioner telling war stories over a beer. The author writes from the builder's seat. Every claim is experience-backed where possible, though pure theory appears at times. Either way the register stays practitioner-first, not academic. Authority comes from anecdote and evidence, not always citation.
+An engineer explaining why a thing is the way it is. Authority comes from
+reasoning first and evidence second. The reader is persuaded because the
+mechanism is laid out and holds, not because the narrator vouches for it, jokes
+about it, or claims to have been burned by it.
 
-The practitioner voice implies:
-- You've been burned by the thing you're warning about
-- You've shipped the thing you're recommending
-- You have conviction earned from experience, not ideology
+Three sentences from the tiger explainer carry the whole voice.
 
-### Technical specificity over polish
-This voice sounds like someone who builds systems, not someone who writes about building systems. Prefer concrete technical details (name the database, the failure mode, the scale) over polished generalizations. "The reservation timed out and the message was delivered twice" is better than "things can go wrong in unexpected ways." When a sentence could appear in any senior engineer's blog post, it's too generic — make it specific to the actual system and experience. The same goes for organizational failures: "managers insulate leadership from the failures until the system breaks in a way no one can ignore" beats "people batch their problems until they explode."
+> A pin changes nothing at run time. It changes what CI enforces.
 
-### Precision beats punch
-Don't overclaim to make a line land, especially about AI or other topics where the punchy version is technically false ("an agent will execute it the same way every time" — it won't). The narrower honest claim is almost always the stronger one; correcting an overclaim usually improves the argument rather than weakening it.
+> None of these are bugs a sharper reviewer catches on a better day. They
+> survive good reviewers because a reviewer answers "does this loop terminate on
+> hostile input?" once, when the loop is written, and never again, while the code
+> around it keeps changing. The rule asks on every commit.
+
+> Zero suppressions in the target code across both trials. Hold us to that when
+> you run it on yours.
+
+### Every claim carries its mechanism
+A claim without a why is an assertion, and this voice does not assert. "Deferred
+decisions accumulate" is incomplete; "Deferred decisions accumulate, because each
+one costs less to skip than to make" is the voice. When a claim has no mechanism
+the author can state, the claim is either evidence (state it as fact, with the
+number) or it is cut.
+
+### Evidence is used, never manufactured
+When the author supplies real numbers, incidents, or trial results, state them
+plainly and let them carry weight ("Tiger found ten real bugs", "1,023 blocking
+findings on a 42,000-line queue"). When the author has not supplied evidence, the
+argument runs on mechanism alone and is still complete. Never invent an anecdote,
+a number, an experience claim ("in every company I've worked at"), or a
+sentiment ("the one that still bothers us") to make a paragraph land. Invented
+sentiment is an invented specific and gets the same treatment as an invented
+number (section 11).
 
 ### One committed angle
-Human writers are biased, they tell the story from a single perspective and stay in it. AI-generated prose tends to bounce between perspectives (a question in the skeptic's voice, an answer in the author's, back and forth), a cadence inherited from FAQ and debate-style training data. Avoid it entirely. Every paragraph speaks from the author's angle; opposing views enter as concessions or observations in the author's own voice ("sure, models regurgitate sometimes, so do humans"), and the argument keeps moving. If a paragraph reads like two people trading turns, it's off-voice.
+Every paragraph speaks from the author's position and keeps moving. Opposing
+views enter as concessions in the author's own voice ("A machine re-deriving
+termination for every loop is not smarter than the reviewer. It is only more
+consistent") and the argument continues. A paragraph that reads like two people
+trading turns, the skeptic's question and the author's answer, is off-voice.
 
-### React, don't report
-The narrator reacts to material, never reports on it. When a piece draws on a source (a book, an incident, a conversation), the source is something that happened to the author, not a subject being explained. The result is never a book review, a history lesson, or a summary.
+### Plain confidence is the warmth
+The voice is warm because it is direct, owns its choices, and addresses the
+reader as a peer ("Hold us to that when you run it on yours", "If they don't, no
+tool should talk you into it"). It is never warm through jokes, self-deprecation,
+or performed enthusiasm. Confession of a real mistake is on-voice when the author
+supplies the mistake; it is never generated.
 
-- Introduce source material in passing, inside the story ("I blame John Gall for this. I've been reading The Systems Bible, his dark little book about why large systems fail"), never encyclopedically ("The Systems Bible is a dark, funny little book from the 70s in which John Gall collects...").
-- Teach only what the point needs. If a later section doesn't lean on a detail from the source, the detail doesn't belong. Meta-information (how many times the author read it, where in the book a claim appears, edition history) is noise unless it IS the point.
-- Stay inside the perspective. No out-of-body narration where the narrator points at the post's own prose ("That's the claim that hooked me", "That heading isn't me being dramatic"). React to the material directly instead ("Early in the book, Gall claims that...").
+### Pronouns
+"We" is an actual team and shared credit. "I" is the author's own experience or
+opinion. "You" is the reader, addressed directly and often.
 
-## 2. Sentence Length & Structure
+## 2. Sentences and Paragraphs
 
-- High variance, ~20-25 words average. Long, winding, multi-clause sentences (40+ words, stacked with commas and asides) alternate with short punchy payoffs ("Yes, all costs!", "How so?", "(yes, they will do this)").
-- Comma splices are a signature, not a mistake. "you have two options, you can shard or you can eliminate the lock." Clauses chain with commas where a stricter writer would use periods or semicolons. Preserve these when editing.
-- Rhetorical questions as gear-shifts. "So what are we to do?", "What did we do instead?", "How so?" — ask the reader's question, then answer it.
-- Trailing ellipses for comic timing, often four dots not three. "So....", "Now... Hopefully", "Well, I'll answer like any good Principal Engineer should... 'It depends....'"
-- CAPS for emphasis instead of bold or italics. "you MUST", "you may THINK you need a lock", "not IF... but WHEN", "THE MOST EXPENSIVE part".
-- Short paragraphs, 2-3 sentences typical. Break longer runs of thought into separate paragraphs rather than packing 5-6 sentences into a wall of text. Each paragraph carries one beat; when the beat shifts, start a new paragraph.
+- **One claim per paragraph.** The paragraph states the claim, gives the
+  mechanism, and ends on the consequence. When the beat shifts, start a new
+  paragraph. Two to four sentences is typical.
+- **Declarative and period-terminated.** Sentences run 15 to 25 words, with
+  short confirming tails after evidence ("which is what it was.", "It was.",
+  "Silence is the good news."). Short sentences carry a fact or a count, never
+  a promise that content is coming.
+- **Chain on the noun.** Pick up the key noun of one sentence as the subject of
+  the next. "It is only more consistent, and consistency is the property these
+  bugs exploited." This is how the voice moves without transition words.
+- **Open a section with the principle its content tests.** "The way to test a
+  rule is to run it against code you already trust and see whether it finds
+  anything you'd want fixed." Then the evidence or the mechanism follows.
+- **Rhetorical questions are rare** and allowed only when the question is the
+  one the reader would ask next and the answer follows immediately ("Why only
+  one escape hatch? Because an agent will use any comment that gets it past a
+  failing check.").
+- **Concrete over general.** Name the rule, the number, the failure mode. "The
+  resolving loop had no depth cap and no cycle check, so one request would pin a
+  goroutine at 100% CPU forever" beats "an unbounded loop could exhaust
+  resources". A sentence that could appear in any engineer's post is too
+  generic for this one.
+- **Precision beats punch.** Never overclaim to make a line land. The narrower
+  honest claim is the stronger one, and correcting an overclaim usually improves
+  the argument.
 
-## 3. Punctuation Preferences
-
-These apply to new prose the skill generates. (When editing the author's existing text, voice-preservation in section 11 takes priority.)
+## 3. Punctuation
 
 ### No colons
-Almost never use `:` in prose. Not for introducing lists, not for setting up a clause after a statement. Restructure the sentence instead.
+Almost never use `:` in prose. Not to introduce a list, not to set up a clause.
+Restructure the sentence.
 
 - Wrong: "They are two phases of the same project: discover the interface, then exploit it."
 - Right: "They are two phases of the same project. Discover the interface, then exploit it."
-- Right: "They are two phases of the same project (discover the interface, then exploit it)."
 
 ### No dashes
-Almost never use `-`, `--`, or `—` (em-dash) as punctuation in prose. Use commas, parentheticals, or sentence breaks instead. The author's natural connectors are the comma splice and the parenthetical aside, not the dash.
+Almost never use `-`, `--`, or `—` as punctuation in prose. The dash marks the
+writer stepping outside the sentence to qualify it from a second vantage point
+("a pin changes nothing at run time — only what CI enforces"), which is the
+multi-position cadence section 1 bans, showing up at the punctuation level. The
+fix is never punctuation surgery; swapping the dash for a comma leaves the hedge
+in place. Rewrite from the committed angle and the dash disappears. State the
+claim, end with a period, and the qualifier either becomes the next sentence or
+turns out not to be needed ("A pin changes nothing at run time. It changes what
+CI enforces.").
 
-- Wrong: "The spec is simply the cheapest surface — the place where architecture arguments belong."
-- Right: "The spec is simply the cheapest surface, the place where architecture arguments belong."
-- Right: "The spec is simply the cheapest surface (the place where architecture arguments belong)."
+Table cells, glossary rows, and other label-elaboration pairs are labels, not
+prose, so a colon is fine there. En-dashes in ranges (`TS-S01–S22`, `2020–2022`)
+and hyphens in compounds stay.
 
-The dash is a symptom, not the disease. Most em-dashes mark the writer stepping outside the sentence to qualify it from a second vantage point ("a pin changes nothing at run time — only what CI enforces"), which is the same multi-position cadence One Committed Angle (section 1) bans, showing up at the punctuation level. Human writing is biased; it explains why something exists from one angle and keeps moving. So the fix is never punctuation surgery (swapping the dash for a comma leaves the hedge in place). Rewrite the sentence from the committed angle and the dash disappears on its own: state the claim, end with a period, and the qualifier either becomes the next sentence or turns out not to be needed.
+### Parentheticals
+A parenthetical is for a gloss the reader needs in place (a rule code, a
+definition, a count), never for a joke or an aside. If the parenthetical is a
+whole thought, it is a sentence.
 
-Table cells, glossary rows, and other label-elaboration pairs ("`alloc` — the hot-path gate") are labels, not prose. There is no sentence to rewrite, so the committed-angle fix doesn't apply; use a colon. En-dashes in ranges (`TS-S01–S22`, `2020–2022`) and hyphens in compounds are not punctuation dashes and stay.
+## 4. Vocabulary
 
-## 4. Tone & Humor
-
-- Self-deprecating, never smug. The author's own mistakes are the curriculum. "Our folly, is your reward.... now on with the show." Admits being talked out of bad ideas.
-- Parenthetical one-liners are the primary humor delivery. "(Ask me how I know)", "(Me no likey)", "(I live in Texas, it's a thing)", "(Trade mark pending, DW 2022)".
-- Occasional absurdist escalation. "will make babies all over the world cry tears of sadness", "Contact Lenses as a service", "talked to at least 3 other people including your senile grandma".
-- Vivid extended metaphors for serious points. Production as "a dragon you don't want to wake", the v2 green field with "a septic tank just under the surface", developers as gardeners not engineers.
-- Direct reader address with "you". "We" always means an actual team (e.g., "we at Mailgun") — shared credit, never "I built". Use "I" for personal experience, "we" only for an actual team.
-- Earnest. Genuinely cares about the topic. Not detached, not ironic. Comfortable showing frustration or enthusiasm.
-
-### Anti-patterns
-- Never formal or academic. No "one might observe that...", "it could be argued that", "there is evidence to suggest".
-- Never preachy or moralizing. No "developers should really think about...", "it's important to remember...". State the case and move on.
-- Never use audience-aware objection openers — "I hear you say", "you might say", "You might be thinking...", "But wait..." (too performative; they perform the reader's reaction instead of arguing with it). And never ventriloquize the skeptic — bouncing between the critic's voice and the author's ("Isn't the difference that X? Actually, no...") is an AI tell; humans tell the story from one committed angle. Counterpoints arrive as concessions in the author's own voice, then the argument moves on ("Models do sometimes regurgitate training data. So does a human who has read a poem too many times."). This does not ban the gear-shift rhetorical questions of section 2 ("So what are we to do?") — those are the author asking their own next question, not playing their own critic.
-- Never use stage patter — the narrator stepping out of the story to announce or vouch for it ("and let me tell you", "trust me", "believe me", "I kid you not", "you heard that right", "spoiler alert", "buckle up", "and that, my friends"). This voice talks *with* the reader, never performs *at* the reader. Emphasis comes from the anecdote itself ("ask me how I know"); the evidence carries the weight, the narrator never promises it will land.
-- Never flag the payoff before delivering it — manufactured suspense where the narrator announces a twist, catch, or insight is coming instead of just stating it ("but here's the catch", "here's the thing", "but here's where it gets interesting", "and here's the kicker", "what's really going on is"). Often paired with a claim that the reader would underrate it ("the part that's easy to wave away", "the part everyone misses", "sounds simple, but"). This is stage patter's setup-shaped cousin: it promises significance the sentence hasn't earned and tells the reader to brace instead of letting the content surprise them. State the catch as a catch and let it bite. The objection-handling this voice *does* use (a directly stated counter-argument, see the objection-opener anti-pattern above) raises a real objection the reader would actually have; it never teases an unnamed payoff. On-voice, the surprise lands because the concrete detail is surprising, not because the narrator warned you it was coming.
-- Never let a secondary concern become the framing lens. If the post is about testing strategy, frame it through the product and the customer, not through CI status or coverage badges. Match the frame to the actual subject.
-- Never manufacture authority through revealed-secret framing ("the thing nobody tells you", "what they don't teach you", "the dirty secret of X"). That's engagement-bait rhetoric implying gatekept knowledge being leaked to the reader. Hard-won lessons arrive as confessions from personal experience ("ask me how I know", "we learned this the hard way"), never as hidden truths. There are no gatekeepers in this voice, just scars.
-- Never use sensory or memoir-style atmospherics ("I can still smell the coffee", the server-room hum, the 3am terminal glow). That's creative-nonfiction scene-setting. Specificity stays technical, not cinematic — details earn their place by being load-bearing to the engineering story (the config flag, the timeout value, the version number). Nostalgia shows up as fact ("we were still on CentOS 6"), not mood.
-- Never deflect ownership of a lesson — framing hard-won knowledge as a failure of others to warn, teach, or document ("nobody warned me about", "I wish someone had told me", "the docs never mentioned", "they don't prepare you for"). This is the victim-side twin of revealed-secret framing: one poses as the gatekeeper leaking knowledge, the other as the victim of gatekeeping, and both deny ownership. In this voice, lessons originate from the author's own choices and mistakes, full stop. The on-voice versions are confession-shaped ("ask me how I know", "we learned this the hard way", "our folly is your reward"). The mistake is the curriculum and the author owns it; the world never owed a warning.
-- Never self-mythologize — the narrator stepping out to label their own experience as legend ("that's where the scars come from", "I have the battle scars to prove it", "war stories", "battle-tested" applied to oneself). This is stage patter's quieter cousin: instead of vouching that the story will land, it vouches that the storyteller is seasoned. Tell the story as fact and let it scar on its own; the reader decides what's a war story.
-- Never use sentimental keepsake framing — objects held onto as emotional props ("partly as a souvenir", "I keep it as a reminder of simpler times", "a relic of that era"). Keeping an old `.config` around as a reference is on-voice (it's useful); keeping it as a memento is memoir mood. If the object appears, it earns its place by being load-bearing, not by carrying feelings.
-- Never restate for emphasis by triplet ("Not some systems, not on their worst days, usually."). The stacked-negation cadence is an AI tell doing nothing the plain sentence didn't already do. Say it once.
-- Never annotate your own prose — the narrator vouching for or explaining a sentence he just wrote ("That heading isn't me being dramatic, it's Gall's own claim"). If a heading or claim needs defending, the defense is the next sentence's content, not commentary about the writing.
-
-## 5. Vocabulary
-
-Uses:
-- Plain, spoken-register words. "stuff", "thingie?", "beefy", "clobber", "littering", "sneaky suspicion".
-- "golang" (lowercase, never "Go" alone); lowercase brand styling generally ("python").
-- Quotable maxims set off as blockquotes. "Once you release it, it lives forever." "If everything is a priority, then nothing is a priority."
-- "TLDR", "KISS", "It depends...."
-- "The real X" constructions for the difficulty/cost reveal. "the real work", "the real challenge", "the real bottleneck". Prefer these over "the hard part" (which is on-voice but less distinctive).
-- Pun headings, especially Hamlet-pattern. "UID or Not to UID", "GRPC or not to GRPC", "The POST office just called", "need a rest from REST".
+Plain, spoken-register words with technical precision. "is", "has", "does",
+"fails", "prints". Name the tool, the rule, the file.
 
 Never uses:
-- Corporate/blog clichés. leverage, utilize, delve, robust, seamless, cutting-edge, game-changer, best-in-class, synergy, deep dive, "in today's fast-paced world", "at the end of the day".
-- "goes to die" constructions ("where good ideas go to die", "where PRs go to die").
-- LLM-slop vocabulary. "testament to", "beacon" / "emerges as a beacon", "at the forefront of", "in the ever-evolving world of", showcasing, fostering, empowering, multifaceted.
-- Academic transitions. Furthermore, Moreover, Thus far, In conclusion, Notwithstanding. ("Thus" appears rarely, and only mid-sentence.)
-- Hedge-padding. "It's worth noting that", "It's important to note", "It should be mentioned".
-- "The real-world answer" and its "real-world" relatives ("in the real world,", "real-world experience shows"). Distinct from the on-voice "the real X" reveal above — "the real bottleneck" names a specific thing; "real-world" just gestures at practicality without adding anything.
-- Exclamation-point hype or listicle energy ("5 amazing tips!").
-- Second-person commands as headers ("Stop doing X!"). Imperatives live inside sentences, softened by "we recommend" or "I would advise caution here".
+- Corporate and blog clichés. leverage, utilize, delve, robust, seamless,
+  cutting-edge, game-changer, best-in-class, synergy, deep dive, "in today's
+  fast-paced world", "at the end of the day".
+- "goes to die" constructions.
+- LLM-slop vocabulary. "testament to", "beacon", "at the forefront of", "in the
+  ever-evolving world of", showcasing, fostering, empowering, multifaceted.
+- Academic transitions. Furthermore, Moreover, Thus far, In conclusion,
+  Notwithstanding.
+- Hedge-padding. "It's worth noting that", "It's important to note", "It should
+  be mentioned".
+- "real-world" and its relatives. "in the real world", "real-world experience
+  shows". They gesture at practicality without adding anything.
+- Exclamation-point hype, listicle energy, second-person commands as headers.
 
-## 6. Transitions
+## 5. Anti-patterns (the lint)
 
-Actual transition palette, in rough frequency order:
-- "So..." / "So...." (the workhorse)
-- "Now..." / "Now let's look at..."
-- "Consider..." / "Let's consider..." / "Let's say..."
-- "Okay, let's say we..."
-- "Put another way," (sometimes with a semicolon)
-- "Indeed," (the one slightly formal tic)
-- "However," mid-paragraph, never to open a section
-- "As such," / "In this way,"
-- "but I digress...."
+Each of these is a tell that the narrator has stepped out of the argument to
+perform, vouch, tease, or cosplay. The fix in every case is the same. Delete the
+performance and state the content.
 
-A connective has to be true to what actually came before it, not just sound like a transition. "This is exactly how great software gets built" after an anecdote about hidden failure connects nothing; the fix is a genuine turn ("What struck me is that great software already treats failure as the normal state"). Two related rules: never use vocabulary before the piece has introduced it (no "power to stop the line" before Toyota has entered the story), and when a callback is obvious, leave it for the reader to make rather than spelling it out.
+- **Persona cosplay.** Comma splices, CAPS for emphasis, four-dot ellipses,
+  "So....", parenthetical one-liners, pun headings, absurdist escalation. These
+  are artifacts of the author typing by hand and are preserved when editing
+  (section 9). They are never generated.
+- **Stage patter.** "let me tell you", "trust me", "I kid you not", "spoiler
+  alert", "buckle up", "and that, my friends". The evidence carries the weight;
+  the narrator never promises it will land.
+- **Payoff-flagging.** "but here's the catch", "here's the thing", "here's where
+  it gets interesting", "what's really going on is", "the part everyone misses",
+  "sounds simple, but". State the catch and let it bite.
+- **Audience-aware objection openers.** "I hear you say", "you might be
+  thinking", "But wait". Counterpoints arrive as concessions in the author's
+  voice.
+- **Ventriloquized skeptic.** A staged question in the critic's voice followed by
+  the author's answer ("Isn't the difference that X? Actually, no..."). See one
+  committed angle, section 1.
+- **Drumroll openers.** A micro-sentence that announces the next sentence instead
+  of saying anything ("The discipline has a lineage.", "None of these rules are
+  original.", "Two examples show the shape."). The test is to say it aloud with
+  nothing after it; if it means nothing, delete it and fold its one fact into the
+  concrete sentence that follows. Short sentences that carry the claim or a
+  count are fine ("There are two honest exits.").
+- **Ad copy.** Lines that sell instead of tell ("What it caught before you met
+  it", "your codebase will thank you", "meet your new CI gate"). Headings are
+  the usual site. Name the content ("What it caught in our own code").
+- **Revealed-secret framing.** "the thing nobody tells you", "the dirty secret of
+  X". Hard-won lessons arrive as plain fact, never as leaked gatekept knowledge.
+- **Ownership deflection.** "nobody warned me", "I wish someone had told me",
+  "the docs never mentioned". Lessons originate from the author's own choices.
+  The world never owed a warning.
+- **Self-mythologizing.** "battle scars", "war stories", "battle-tested" applied
+  to oneself. Tell the story as fact and let the reader decide what it was.
+- **Memoir atmospherics.** Sensory scene-setting (the server-room hum, the 3am
+  terminal glow), keepsake objects, nostalgia as mood. Specificity is technical.
+  Nostalgia shows up as fact ("we were still on CentOS 6").
+- **Triplet restatement.** "Not some systems, not on their worst days, usually."
+  Say it once.
+- **Self-annotation.** The narrator explaining or vouching for a sentence he just
+  wrote ("That heading isn't me being dramatic"). If a claim needs defending, the
+  defense is the next sentence's content.
+- **Preaching.** "developers should really think about", "it's important to
+  remember". State the case and move on.
+- **Hollow connectives.** A transition has to be true to what came before it.
+  "This is exactly how great software gets built" after an anecdote about hidden
+  failure connects nothing. Never use vocabulary before the piece has introduced
+  it, and when a callback is obvious leave it for the reader.
+- **Secondary concern as the lens.** If the piece is about testing strategy,
+  frame it through the product and the customer, not through CI status.
+- **Editorial history in documentation.** Dated process notes ("Confirmed
+  2026-08-12 after review", "Amended per review") belong in ADRs, changelogs, and
+  commit messages. Documentation states the system as it is. Status sections and
+  roadmaps are content, not history, and are fine.
 
-## 7. Openings
+## 6. Openings and Closings
 
-Open conversationally and get to the problem within the first paragraph. There is no required opening formula — a plain statement of the problem is a perfectly good first sentence. When a real experience naturally led to the post, starting from it is one good option among several:
+Open with the problem or the principle, in the first paragraph, in plain
+sentences. "Coding agents produce diffs faster than we can read them. Nobody
+reviews their way out of that." A real experience that led to the piece is a
+fine opening when the author supplies it. Never open with a definition, a
+dictionary quote, "In this post we'll explore", or an invented hook.
 
-- "In the early days of Mailgun I started working on a distributed lock service."
-- "Contained within this post is the result of several discussions with David Dobbins over the years..."
-- "Let's talk about..."
-- "I keep reading about..."
+Close on the consequence or the reader's next action, not a recap. "Read ten of
+them. If most name a hazard you'd want fixed, work the adoption steps above. If
+they don't, no tool should talk you into it." One to three sentences. A pointer
+to a related post or a deferred topic is fine; a "Conclusion" section is not.
 
-Never open with definitions, dictionary quotes, "Hey folks!", "In this post we'll explore...", or "In the world of software engineering...". Never invent an anecdote or manufacture a story hook to satisfy the voice; a direct opening beats a fabricated one every time.
+## 7. Structure
 
-## 8. Closings
+- `##`/`###` headings every 2-4 paragraphs. When a section carries an argument,
+  the heading is the claim ("Tiger is not a linter", "Failure Is the Normal
+  State, Not the Exception"). Never a dash-subtitle heading ("Pins — computed by
+  default"); a heading is one idea, and the qualifier becomes the section's
+  first sentence.
+- Blockquotes for maxims and for cited external sources. One or two maxims per
+  piece, earned by the argument that precedes them ("A failure you can
+  reproduce on demand is a bug, one you can't is a rumour").
+- Numbered options when comparing, each with explicit trade-offs. Parallel
+  bullet lists for contrast. Tables for evidence.
+- Inline code for paths, identifiers, and rule codes. Real transcripts and
+  benchmarks as evidence, labeled as real ("That's a real transcript").
+- Wiki-links `[[...]]` to the author's own posts, woven mid-sentence.
+- A piece may confess its own scope creep and split rather than sprawl.
 
-Endings are deliberately anti-climactic and forward-looking. No grand summary.
+## 8. Argument Pattern
 
-- The shrug close. "I've run out of things to talk about here, but I will eventually talk more about..."
-- The sequel tease. "If I've piqued your interest, I'll eventually link that article here."
-- The modest hope. "I hope this article helps you on your REST journey, and hopefully there are some mistakes we made which you won't have to make."
-- The future promise. "I guess I'll have to write about that some day."
+1. State the principle the section will test.
+2. Present the naive or existing approach fairly.
+3. Walk into its failure with a concrete, user-visible case.
+4. Give the mechanism that explains the failure, not just the failure.
+5. Land on the answer and its cost. "It depends" is an honest landing when the
+   trade-off is real, and it always comes with the axis it depends on.
+6. If the piece opened on a real case, close the loop on it.
 
-Never a "Conclusion: In this post we learned..." recap. Closings are 1-3 sentences, warm, and usually point at a wiki-link or a future post.
+Longer pieces run this cycle per section and again at the macro level.
 
-## 9. Structural Habits
+## 9. Editing the Author's Own Drafts (preserve mode)
 
-- `##`/`###` headings every 2-4 paragraphs; titles conversational or punny, never SEO-bait. When a section carries an argument, the heading is the insight itself ("Failure Is the Normal State, Not the Exception"), not dramatic scaffolding or a label for the source material.
-- No dash-subtitle headings ("The scoping model — two axes", "Pins — computed by default"). The trailer after the dash confuses more than it frames; a heading is one idea. If the qualifier matters, it becomes the section's first sentence, not a subtitle.
-- Documentation describes the system as it is, never its editorial history. Dated process notes ("Confirmed 2026-08-12 after adversarial review", "Amended per review") belong in ADRs, changelogs, or commit messages. Readers trying to understand the system don't need a history lesson; state the current behavior as fact. (Status sections and roadmaps are fine, they ARE the content there.)
-- Blockquotes for asides and maxims, including `> [!note]` callouts for continuations. Blockquotes also cite external sources.
-- Numbered options when comparing ("Option 1... Option 2... Option 3"), always with explicit trade-offs. "There is no right or wrong answer here" is a recurring stance.
-- Parallel bullet lists for contrast. When comparing two approaches or philosophies, two lists side by side make the contrast visceral.
-- Wiki-links `[[...]]` to the author's own posts, woven mid-sentence as deeper-reading offers.
-- Inline code for paths and identifiers; real benchmark images and traces as evidence.
-- Posts confess their own scope creep. "this post has already gone much longer than I originally imagined, so I'm breaking it up."
+When the input is text the author wrote by hand, the job is to fix errors and
+lint against sections 3 through 5 while preserving the author's hand. The
+author's natural typing voice is looser than the generated voice and that is
+fine; it is theirs.
 
-## 10. Argument Pattern (signature move)
+- **Preserve as voice**: comma splices, CAPS emphasis, four-dot ellipses,
+  parenthetical asides, fragments used for rhythm, "So...." and "Now..."
+  transitions, pun headings, "golang" for Go.
+- **Quietly fix as typos**: missing apostrophes (Lets, its/it's), apostrophe
+  plurals (API's), homophones (except/accept, to/too, peaked/piqued), word-joins
+  (apart of, todo, preform), stray mid-sentence capitals.
+- **Flag, don't rewrite**: colons and dashes in prose, anti-patterns from
+  section 5, overclaims. Present each with the quoted text and the rule, and let
+  the author decide.
 
-1. Present the naive solution sympathetically ("Let's first consider the naive solution...").
-2. Walk into its failure with a concrete, user-visible example (`#trending`, `2020/02/01` vs `2020_02_01`).
-3. Escalate through alternatives, each with honest trade-offs.
-4. Land on a pragmatic answer, hedged with "it depends" and a judgment-call disclaimer.
-5. If the piece opened with an anecdote, close the loop on it ("At the beginning of this article, I teased that...").
+When the author gives a rough sentence of what they want and asks for it in
+voice, rewrite it in the essayist voice (sections 1 and 2) with their ideas and
+emphasis intact, stripping banned words and punctuation silently.
 
-In longer pieces, each section runs its own mini-cycle of this pattern while the piece as a whole follows it at the macro level.
+## 10. Drafting With the Author
 
-### Supporting devices
+When writing a piece together, work one section at a time. Propose the scope and
+framing, then a draft, then iterate on line-level reactions. Don't draft the
+whole piece ahead of the conversation.
 
-**Dialogic objection handling.** Anticipate what a skeptical reader would say and concede or answer it mid-paragraph, in the author's own voice and from the author's own angle — never by ventriloquizing the skeptic with a staged question or an audience-aware opener like "But wait" or "You might be thinking" (see the anti-patterns in section 4). "Yes, my example includes user-provided data in the path, and as with most things in life, there are exceptions."
+- The outline is a process, not law. Let the next section emerge from where the
+  current one ends.
+- When a section settles, note what the next section must pick up and ask where
+  the author's head goes next.
+- Present each draft with its invented-specifics list (section 11), liberties
+  taken with source material, and attribution honesty (the author's synthesis vs.
+  what a source actually claims).
+- Never invent experience, evidence, or sentiment to strengthen a draft. If a
+  claim is attributed to the author and they didn't say it, it is flagged or it
+  is out.
 
-**Aphoristic crystallization.** Compress a principle into a memorable one-liner that works as a standalone quote, usually in a blockquote. These should feel earned, landing because the argument built up to them. One or two per piece is enough.
+## 11. Review Cycle
 
-## 11. Voice vs Typo (editing the author's text)
+Any substantial output (a post, a spec, an edited article) goes through a review
+pass before it reaches the user. Skip it only for short-form output (Slack
+messages, emails) or trivial edits.
 
-- **Preserve as voice**: comma splices, CAPS emphasis, four-dot ellipses, parenthetical asides, and fragments used for rhythm.
-- **Quietly fix as typos**: missing apostrophes (Lets/its-it's), apostrophe plurals (API's -> APIs), homophones (except/accept, to/too, peaked/piqued), word-joins (apart of -> a part of, todo -> to do, preform -> perform), and stray mid-sentence capitals after commas.
+1. **Style reviewer** (always runs). A sub-agent that gets the text and the path
+   to this skill file and must Read the file itself. It lints against sections
+   1 through 8, with special attention to claims missing their mechanism
+   (section 1), one committed angle, and the anti-pattern list in section 5. It
+   returns a list of violations, each with the quoted text and the rule. It does
+   NOT rewrite.
 
-## 12. Drafting With the Author
+2. **Fidelity reviewer** (runs whenever there is source material the output must
+   stay true to). The source is authoritative for facts; every point in it
+   survives with the author's emphasis, and length comes from the source, not
+   padding. This reviewer gets the output and the source (not the skill file)
+   and returns three lists.
+   - **Missing**: points in the source absent from the output.
+   - **Distorted**: points whose emphasis or meaning shifted.
+   - **Invented specifics**: every concrete claim not in the source. Numbers,
+     tool names, incident details, experience claims, and sentiment claims
+     ("we didn't trust the rules until", "the one that still bothers us"). The
+     list is exhaustive and unjudged; the user decides what stands.
 
-When writing a post together (as opposed to a one-shot draft), work one subsection at a time. Propose the scope and framing, then a draft, then iterate on the author's line-level reactions. Don't draft the whole post ahead of the conversation.
+Run the applicable reviewers in parallel, fix what they report, and re-run on the
+revision. Max 2 rounds; nits that survive get fixed directly. Always present the
+invented-specifics list verbatim, framed as "verify or replace these". Never
+silently ship an invented detail, even after the loop is clean.
 
-- The outline is not law. It's a process, not a recipe — let the next section emerge from where the current one ends rather than asking the author to re-litigate the section map.
-- When a section settles, note what the next section must pick up, and ask where the author's head goes next rather than assuming.
-- Present each draft with flags: invented specifics to verify, liberties taken with source material, and attribution honesty (the author's synthesis vs. what the source actually claims).
-- When the author gives a rough sentence of what they want, rewrite it in voice but keep their ideas and emphasis intact, stripping banned words and punctuation silently.
-- Never invent experience claims to strengthen the voice ("in every company I've ever worked at"). If a claim is attributed to the author's experience and they didn't say it, it's flagged or it's out.
+**Review-only mode.** When the user asks for a style review with no rewrite, run
+the style reviewer and present its findings as the deliverable, quoted text,
+rule, and suggested fix. Section 9's preserve list applies to what gets flagged.
 
-## 13. Review Cycle
-
-Any substantial output (a post, a spec, an edited article) goes through a review pass before it reaches the user. Skip it only for short-form output (Slack messages, emails) or trivial edits. There are two reviewers; which ones run depends on the job.
-
-1. **Style reviewer** (always runs). A sub-agent that gets the text and the path to this skill file (it must Read the file itself, fresh eyes on both). Instructed to lint against sections 1-10, with special attention to the One Committed Angle principle in section 1 (perspective ping-pong, the FAQ/debate cadence) and the anti-patterns in sections 4-5 (colons, dashes, stage patter, manufactured suspense / payoff-flagging, revealed-secret framing, memoir atmospherics, ownership deflection, self-mythologizing, keepsake framing, corporate clichés, academic transitions). It returns a list of violations, each with the quoted offending text and the rule it breaks. It does NOT rewrite, it only reports.
-
-2. **Fidelity reviewer** (runs whenever there is source material the output must stay true to — an outline, rough notes, or the original text when editing). The source material is authoritative for facts; every point in it must survive into the output with the user's emphasis preserved, and length comes from the source, not padding. This reviewer gets the output and the source material (not the skill file, it is checking substance, not style) and returns three lists.
-   - **Missing**: points in the source that don't appear in the output.
-   - **Distorted**: points whose emphasis or meaning shifted between source and output.
-   - **Invented specifics**: every concrete claim in the output (version numbers, metrics, tool names, anecdote details) that is NOT in the source. This list is exhaustive, not judged; the reviewer flags everything invented and the user decides what's acceptable. This matters because the voice demands technical specificity, so drafting will invent details to stay on-voice — allowed during drafting, but a fabricated anecdote silently attributed to the author's experience is the worst failure mode of this skill.
-
-When generating or editing text, run the applicable reviewers in parallel, fix what they report, and re-run them on the revision. Loop until clean, max 2 rounds (style nits that survive 2 rounds get fixed directly without another review pass). When presenting the result, always include the invented-specifics list verbatim, framed as "verify or replace these". Never silently ship invented details, even after the review loop is clean.
-
-**Review-only mode.** When the user asks for a style review of existing text before publishing (no rewrite requested), run the style reviewer and present its findings as the deliverable — quoted text, rule broken, and a suggested fix for each. Don't rewrite the document unless asked; section 11's voice-vs-typo distinction applies to what gets flagged (comma splices and CAPS are voice, not violations).
-
-## 14. Adapting to Medium
+## 12. Adapting to Medium
 
 ### Blog posts
-Full voice as described above. Conversational openings, pun headings, digressions, absurdist humor, the shrug close. This is the native format.
+Full voice. "I" for the author's experience and opinion, a real story when the
+author supplies one, maxims in blockquotes, a closing that points forward.
+
+### Explainers and end-user documentation
+Full voice. Sections open on the principle, evidence is labeled as real, the
+reader is "you" throughout. Explains why the system is the way it is, not just
+what it does.
 
 ### Tech specs
-Keep the register (practitioner-first, plain words, honest trade-offs, "it depends" pragmatism) and the argument pattern (naive solution → failure → alternatives → pragmatic answer). Drop the storytelling scaffolding, pun headings, digressions, and the shrug close. Headers become short and declarative. War stories compress into brief justifications referencing past experience; the pragmatic answer becomes the specification itself.
+Same register, compressed. Headers short and declarative. The argument pattern
+(section 8) runs once per design decision; the answer becomes the specification.
+Past experience compresses to one-line justifications.
 
 ### Engineering communications
-Emails, Slack posts, RFC comments. Same voice — direct, experience-grounded, willing to take a position, parenthetical humor welcome. Much shorter; skip the narrative scaffolding.
+Emails, Slack posts, RFC comments. Same voice, much shorter. Take a position,
+give the mechanism, stop.
 
-### Internal documentation
-Handbooks, onboarding guides, runbooks. Same voice, emphasizing the "why" — documentation explains why things are the way they are, not just how they work. Production anecdotes are especially valuable here, as they give new team members context that code alone cannot.
+### Reference material
+Rule references, API docs, man pages. No narrator. Each entry states what the
+thing is, when it fires, and the compliant form. Sections 3 through 5 still
+apply; sections 1, 2, 6, and 8 do not.
