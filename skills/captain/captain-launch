@@ -1,0 +1,363 @@
+#!/usr/bin/env bash
+# captain-launch — launch/resume a Linear ticket as a herdr workspace + Claude
+# worker, drawing pooled repos' trees from the treehouse pool (ARM-2605).
+#
+#   captain-launch <TICKET> <BRANCH> [--label TEXT] [--start|--resume]
+#                  [--base REF] [--model NAME] [--prompt TEXT] [--no-focus]
+#
+# --model picks the worker's Claude model (default sonnet). Policy (Derrick,
+# 2026-08-25): sonnet for editing/coding tickets, opus for tickets needing
+# architecture/design judgment, fable only after the user explicitly approves
+# it for that launch. The captain chooses per ticket; the launcher just passes
+# the flag through to the worker's claude argv.
+#
+# Contract: exactly one JSON object on stdout, `status` field first; all
+# human-readable progress on stderr. Exit 0 iff status=ok. Statuses:
+#   ok | agent_start_failed | injection_unconfirmed |
+#   pool_exhausted | pool_error | herdr_unavailable |
+#   usage_error | not_a_repo | checkout_failed | worktree_create_failed |
+#   workspace_failed
+#
+# pool_exhausted is PROVEN, never assumed: after a lease failure the script
+# reads `treehouse status --json` and reports exhaustion only when no tree is
+# available AND the pool is at max_trees. Every other lease failure is
+# pool_error (treehouse stderr in .detail) — a fault to diagnose, not a queue
+# to wait in.
+#
+# Phases:
+#   (a) Preflight: herdr server answering. There is deliberately NO Linear-MCP
+#       preflight and NO post-boot Linear watch (removed 2026-09-08, Derrick:
+#       they cost ~85s per launch in the happy path and never fixed the flaky
+#       connector fetch). A worker that boots Linear-less halts
+#       blocked_on_access under the worker contract — that is the detection
+#       path now; recovery is a relaunch or a brief-file dispatch.
+#   (b) Branch recovery: fetch the ticket branch; make a local tracking branch
+#       when it exists only on the remote.
+#   (c) Tree acquisition: a worktree that already has the branch is reused.
+#       Pooled repos (treehouse.toml at repo root) lease via
+#       `treehouse get --lease --lease-holder <ticket> --json` — a fresh
+#       worktree path costs a cold Bazel output base (armada AGENTS.md,
+#       PR #2712), so pool exhaustion FAILS here, never falls back to minting.
+#       Non-pooled repos keep `herdr worktree create` (fresh path, legacy).
+#   (d) Workspace + agent, herdr 0.7.5 dialect: `workspace create --cwd <tree>`
+#       with the repo's scripts/claude-shims/ prepended to the worker's PATH
+#       (so the argv guards bind), then `agent start <name> --kind claude
+#       --pane <id> -- --dangerously-skip-permissions` (user decision: this
+#       workstation is disposable; classifier denials stall unattended
+#       workers). The one-time bypass-permissions consent dialog is answered in
+#       the gate loop, like the folder-trust dialog.
+#   (e) Injection: in 0.7.5 `pane run` TYPES text but does not submit — Enter
+#       goes separately via `pane send-keys` — and `agent read` prints raw
+#       text. Poll the screen, send once the prompt is drawn, verify it landed.
+set -uo pipefail
+
+log() { echo "captain-launch: $*" >&2; }
+
+# finish <status> [key=value ...] — print the one JSON result and exit
+# (0 for ok, 1 otherwise). Values are strings.
+finish() {
+  local status=$1; shift
+  local jq_args=(--arg status "$status")
+  local jq_obj='{status: $status'
+  local kv k
+  for kv in "$@"; do
+    k=${kv%%=*}
+    jq_args+=(--arg "$k" "${kv#*=}")
+    jq_obj+=", $k: \$$k"
+  done
+  jq_obj+='}'
+  jq -n "${jq_args[@]}" "$jq_obj"
+  [ "$status" = ok ] && exit 0
+  exit 1
+}
+
+# --- args --------------------------------------------------------------------
+ticket=${1:-}; branch=${2:-}
+shift 2 2>/dev/null || true
+label="" base=main mode_flag="" prompt="" no_focus=0 model=sonnet
+while [ $# -gt 0 ]; do
+  case $1 in
+    --label)  label=$2; shift 2 ;;
+    --base)   base=$2; shift 2 ;;
+    --model)  model=$2; shift 2 ;;
+    --prompt) prompt=$2; shift 2 ;;
+    --start)  mode_flag=start; shift ;;
+    --resume) mode_flag=resume; shift ;;
+    --no-focus) no_focus=1; shift ;;
+    *) finish usage_error detail="unknown argument: $1" ;;
+  esac
+done
+if [ -z "$ticket" ] || [ -z "$branch" ]; then
+  log "usage: captain-launch <TICKET> <BRANCH> [--label TEXT] [--start|--resume] [--base REF] [--model NAME] [--prompt TEXT] [--no-focus]"
+  finish usage_error detail="TICKET and BRANCH are required"
+fi
+agent=$(tr '[:upper:]' '[:lower:]' <<<"$ticket")
+# The worker's Claude session name (its SendMessage address) is always the
+# lowercased ticket id — deterministic, and latest-wins on relaunch so a
+# message to the ticket reaches the live worker. Independent of the herdr
+# agent name, which gets a -rNNN suffix on collision.
+session_name=$agent
+[ -n "$label" ] || label=$agent
+
+repo=$(git rev-parse --show-toplevel 2>/dev/null) ||
+  finish not_a_repo detail="run from inside the target repo (cwd resolves it)"
+
+# --- (a) preflight -----------------------------------------------------------
+deadline=$(( $(date +%s) + ${CAPTAIN_LAUNCH_PREFLIGHT_TIMEOUT:-240} ))
+until herdr workspace list >/dev/null 2>&1; do
+  if (( $(date +%s) >= deadline )); then
+    finish herdr_unavailable detail="herdr server not answering"
+  fi
+  log "waiting for herdr server..."; sleep 5
+done
+
+# --- (b) branch recovery -----------------------------------------------------
+git -C "$repo" fetch --no-tags origin "$branch" >/dev/null 2>&1
+existed=0
+if git -C "$repo" show-ref --verify --quiet "refs/heads/$branch"; then
+  existed=1
+elif git -C "$repo" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+  git -C "$repo" branch --track "$branch" "origin/$branch" >/dev/null 2>&1
+  existed=1
+fi
+mode=$mode_flag
+if [ -z "$mode" ]; then
+  [ $existed -eq 1 ] && mode=resume || mode=start
+fi
+
+# --- (c) tree acquisition ----------------------------------------------------
+ck=$(git -C "$repo" worktree list --porcelain \
+     | awk -v b="refs/heads/$branch" '$1=="worktree"{p=$2} $1=="branch" && $2==b {print p; exit}')
+leased=0
+ws=""
+if [ -z "$ck" ]; then
+  if [ -f "$repo/treehouse.toml" ]; then
+    log "pooled repo — leasing a treehouse tree for $ticket"
+    # $() captures stdout (the JSON); treehouse banners stay on stderr and
+    # flow through to this script's stderr.
+    lease_err_file=$(mktemp)
+    if ! lease_json=$(cd "$repo" && treehouse get --lease --lease-holder "$ticket" --json 2>"$lease_err_file") ||
+        [ -z "$lease_json" ]; then
+      lease_err=$(<"$lease_err_file"); rm -f "$lease_err_file"
+      [ -n "$lease_err" ] && log "treehouse get: $lease_err"
+      # Prove exhaustion before claiming it (mislabeling every lease failure
+      # pool_exhausted sent the captain into wait-for-a-return on a pool FAULT,
+      # 2026-08-31). Exhausted = no available tree AND pool at max_trees.
+      pool_json=$(cd "$repo" && treehouse status --json 2>/dev/null)
+      max_trees=$(sed -nE 's/^max_trees *= *([0-9]+).*/\1/p' "$repo/treehouse.toml" | head -n1)
+      total=$(jq 'length' <<<"$pool_json" 2>/dev/null)
+      avail=$(jq '[.[] | select(.status=="available")] | length' <<<"$pool_json" 2>/dev/null)
+      holders=$(jq -r '[.[] | select(.status!="available") | "\(.lease_holder // "?") (\(.status))"] | join(", ")' <<<"$pool_json" 2>/dev/null)
+      if [ -n "$max_trees" ] && [ -n "$total" ] && [ "$avail" = 0 ] && [ "$total" -ge "$max_trees" ] 2>/dev/null; then
+        finish pool_exhausted \
+          detail="all $total/$max_trees pool trees are taken: $holders — wait for a 'treehouse return <path>' or raise max_trees in $repo/treehouse.toml. NEVER mint a fresh worktree path for a pooled repo."
+      fi
+      finish pool_error \
+        detail="treehouse lease failed but the pool is NOT exhausted ($avail of $total available, max_trees=$max_trees; holders: $holders) — a pool fault to diagnose, not exhaustion to wait out. treehouse stderr: $lease_err"
+    fi
+    rm -f "$lease_err_file"
+    ck=$(jq -r 'if type=="object" then (.path // .worktree_path // .worktree.path // .lease.worktree_path // empty) else empty end' <<<"$lease_json" 2>/dev/null)
+    if [ -z "$ck" ]; then
+      # fallback: first quoted absolute path in the JSON that exists on disk
+      while read -r cand; do
+        [ -d "$cand" ] && { ck=$cand; break; }
+      done < <(grep -oE '"/[^"]+"' <<<"$lease_json" | tr -d '"')
+    fi
+    if [ -z "$ck" ]; then
+      finish pool_error detail="lease succeeded but no tree path could be extracted from treehouse JSON: $lease_json"
+    fi
+    leased=1
+    log "leased $ck"
+    # Put the leased tree on the ticket branch; new branches build from
+    # origin/<base> so work starts on the current remote base.
+    co_ok=1
+    if [ $existed -eq 1 ]; then
+      git -C "$ck" switch "$branch" >&2 || co_ok=0
+    else
+      git -C "$repo" fetch --no-tags origin "$base" >/dev/null 2>&1
+      git -C "$ck" switch -c "$branch" "origin/$base" >&2 ||
+        git -C "$ck" switch -c "$branch" "$base" >&2 || co_ok=0
+    fi
+    if [ $co_ok -eq 0 ]; then
+      log "checkout of $branch failed in leased tree — returning the lease"
+      treehouse return "$ck" --if-lease-holder "$ticket" --force >&2
+      finish checkout_failed detail="git switch to $branch failed in leased tree $ck (lease returned)"
+    fi
+  else
+    log "no treehouse pool — legacy fresh-path worktree create"
+    label_args=()
+    [ -n "$label" ] && label_args=(--label "$label")
+    created=$(herdr worktree create --cwd "$repo" --branch "$branch" --base "$base" "${label_args[@]}" --no-focus --json 2>&1)
+    ws=$(jq -r '.result.worktree.open_workspace_id // .result.workspace.workspace_id // empty' <<<"$created" 2>/dev/null)
+    ck=$(jq -r '.result.worktree.path // .result.worktree.checkout_path // empty' <<<"$created" 2>/dev/null)
+    if [ -z "$ws" ] || [ -z "$ck" ]; then
+      finish worktree_create_failed detail="herdr worktree create failed: $created"
+    fi
+    # worktree create auto-opens a workspace with NO env — the worker contract
+    # and the resume shim both key off the workspace env (CAPTAIN_SESSION_NAME
+    # + shim PATH), so close it and let create_workspace re-open it stamped.
+    herdr workspace close "$ws" >/dev/null 2>&1
+    ws=""
+  fi
+fi
+
+# --- (d) workspace + agent ---------------------------------------------------
+# Reuse a workspace already showing this checkout (idempotent resume).
+if [ -z "$ws" ]; then
+  ws=$(herdr workspace list 2>/dev/null \
+       | jq -r --arg ck "$ck" '.result.workspaces[] | select(.worktree.checkout_path==$ck) | .workspace_id' \
+       | head -n1)
+  if [ -n "$ws" ]; then
+    # A reused workspace may predate env stamping (user-made worktree, or a
+    # pre-contract launch), leaving the worker without CAPTAIN_SESSION_NAME.
+    # If no agent is live in it, recreate it through create_workspace so the
+    # env is present; if a worker IS live, keep the workspace — closing it
+    # would kill the session — and log the degradation.
+    reuse_pane=$(herdr pane list 2>/dev/null \
+                 | jq -r --arg ws "$ws" '.result.panes[] | select(.workspace_id==$ws) | .pane_id' \
+                 | head -n1)
+    reuse_agent=""
+    [ -n "$reuse_pane" ] && reuse_agent=$(herdr agent list 2>/dev/null \
+      | jq -r --arg p "$reuse_pane" '.result.agents[] | select(.pane_id==$p) | .agent' | head -n1)
+    if [ -z "$reuse_agent" ]; then
+      log "reused workspace $ws has no live agent — recreating it with the captain env"
+      herdr workspace close "$ws" >/dev/null 2>&1
+      ws=""
+    else
+      log "reusing workspace $ws with live agent $reuse_agent — workspace env not re-stamped"
+    fi
+  fi
+fi
+
+create_workspace() {  # sets ws + pane; workers get the captain + repo shims on PATH
+  # The captain shim dir carries a `claude` wrapper that re-appends
+  # --name/--settings when herdr restarts the worker with a bare
+  # `claude --resume` (herdr does not replay agent argv). It reads
+  # CAPTAIN_SESSION_NAME from this workspace env.
+  local env_args=() created
+  local shim_path="$HOME/.claude/skills/captain/shims"
+  if [ -d "$repo/scripts/claude-shims" ]; then
+    shim_path="$shim_path:$repo/scripts/claude-shims"
+  fi
+  env_args=(--env "PATH=$shim_path:$PATH" --env "CAPTAIN_SESSION_NAME=$session_name")
+  created=$(herdr workspace create --cwd "$ck" --label "$label" "${env_args[@]}" --no-focus 2>&1)
+  ws=$(jq -r '.result.workspace.workspace_id // empty' <<<"$created" 2>/dev/null)
+  pane=$(jq -r '.result.root_pane.pane_id // empty' <<<"$created" 2>/dev/null)
+  [ -n "$ws" ] && [ -n "$pane" ]
+}
+
+start_agent() {  # requires pane; picks a free agent name; sets agent_started=1
+  local name=$agent started
+  if herdr agent list 2>/dev/null | jq -e --arg n "$name" '.result.agents[] | select(.name==$n)' >/dev/null 2>&1; then
+    name="$agent-r$RANDOM"
+  fi
+  # A freshly created workspace pane rejects agent start with
+  # agent_pane_busy until its shell finishes booting (lost twice in a row
+  # on 2026-08-25 with no wait). Wait for the shell prompt to draw before
+  # starting the agent.
+  local ready_try
+  for ready_try in $(seq 15); do
+    if herdr pane read "$pane" 2>/dev/null | grep -qE '[>❯$%]'; then
+      break
+    fi
+    log "pane $pane shell not ready yet ($ready_try/15) — waiting"
+    sleep 1
+  done
+  started=$(herdr agent start "$name" --kind claude --pane "$pane" --timeout 90000 -- --model "$model" --name "$session_name" --settings '{"crossSessionInbound":"accept"}' --dangerously-skip-permissions 2>&1) || {
+    log "agent start failed: $started"
+    return 1
+  }
+  agent=$name
+}
+
+pane=""
+if [ -n "$ws" ]; then
+  pane=$(herdr pane list 2>/dev/null \
+         | jq -r --arg ws "$ws" '.result.panes[] | select(.workspace_id==$ws) | .pane_id' \
+         | head -n1)
+else
+  create_workspace || finish workspace_failed detail="herdr workspace create failed for $ck" worktree="$ck"
+fi
+[ -n "$pane" ] || finish workspace_failed detail="no pane found for workspace $ws" workspace="$ws" worktree="$ck"
+
+running=$(herdr agent list 2>/dev/null \
+          | jq -r --arg p "$pane" '.result.agents[] | select(.pane_id==$p) | .agent' | head -n1)
+if [ -z "$running" ]; then
+  start_agent || { sleep 3; start_agent; } || finish agent_start_failed \
+    detail="retry: herdr agent start $agent --kind claude --pane $pane -- --model $model --name $session_name --settings '{\"crossSessionInbound\":\"accept\"}' --dangerously-skip-permissions" \
+    workspace="$ws" pane="$pane" worktree="$ck"
+fi
+
+# --- (e) injection -----------------------------------------------------------
+cmd="/linear-$mode $ticket"
+[ -n "$prompt" ] && cmd=$prompt
+# Probe = the injected command's own prefix, never the bare ticket id: the
+# input box renders ghost-text suggestions that can contain the ticket (saw
+# "create TEST-1.md" while probing for TEST-1, 2026-08-31), which a ticket-id
+# probe misreads as a landed kickoff and skips the send.
+probe=${cmd:0:24}
+
+gate_and_inject() {  # 0 = landed, 1 = unconfirmed
+  local screen after poll consent_try=0
+  herdr agent wait "$pane" --until idle --timeout 15000 >/dev/null 2>&1
+  for _ in $(seq 30); do
+    screen=$(herdr agent read "$pane" --source visible --lines 30 2>/dev/null | tr '\n' ' ')
+    # One-time bypass-permissions consent: "Yes, I accept" sits below the
+    # default "No, exit" — Down+Enter; alternate with the number shortcut in
+    # case the key name isn't accepted. Match the dialog's option text, never
+    # 'bypass permissions': after consent the status line permanently shows
+    # '⏵⏵ bypass permissions on', which made this matcher fire on every read,
+    # type stray '2' messages into the worker chat, and starve the injection
+    # branch until the loop expired (both launches, 2026-08-25).
+    if grep -qiF 'yes, i accept' <<<"$screen"; then
+      if (( consent_try % 2 == 0 )); then
+        herdr pane send-keys "$pane" Down Enter >/dev/null 2>&1
+      else
+        herdr pane send-keys "$pane" 2 >/dev/null 2>&1
+        herdr pane send-keys "$pane" Enter >/dev/null 2>&1
+      fi
+      consent_try=$((consent_try + 1)); sleep 1; continue
+    fi
+    # First-run folder-trust gate. The cursor does NOT reliably default to
+    # the trust option (current build defaults to "No, exit" — a bare Enter
+    # exited the worker, caught in test 2026-08-31): read where the ❯ cursor
+    # sits and move it to the yes/trust option before confirming.
+    if grep -qiE 'trust this folder' <<<"$screen"; then
+      if grep -qiE '❯ *(no|don.t)' <<<"$screen"; then
+        herdr pane send-keys "$pane" Down >/dev/null 2>&1
+      fi
+      herdr pane send-keys "$pane" Enter >/dev/null 2>&1
+      sleep 1; continue
+    fi
+    # Already landed (this or a prior iteration's send took).
+    if grep -qF "$probe" <<<"$screen"; then return 0; fi
+    # Send only once the input prompt is drawn — never type into the splash.
+    if grep -qF '❯' <<<"$screen"; then
+      herdr pane run "$pane" "$cmd" >/dev/null 2>&1
+      herdr pane send-keys "$pane" Enter >/dev/null 2>&1
+      # The echo can lag the visible window while the worker starts its turn.
+      # POLL for it — a retype queues a duplicate kickoff message (7 duplicates
+      # in one launch, 2026-08-31); resending is the fallback after ~10s, not
+      # the per-second default.
+      for poll in $(seq 10); do
+        sleep 1
+        after=$(herdr agent read "$pane" --source visible --lines 30 2>/dev/null | tr '\n' ' ')
+        grep -qF "$probe" <<<"$after" && return 0
+      done
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+lease_note() { [ $leased -eq 1 ] && echo "treehouse return $ck" || echo ""; }
+
+gate_and_inject || finish injection_unconfirmed \
+  detail="worker is up but the kickoff text never appeared; inject manually: herdr pane run $pane \"$cmd\" && herdr pane send-keys $pane Enter" \
+  workspace="$ws" pane="$pane" agent="$agent" worktree="$ck" lease_return="$(lease_note)"
+
+[ $no_focus -eq 1 ] || herdr workspace focus "$ws" >/dev/null 2>&1
+
+finish ok ticket="$ticket" branch="$branch" mode="$mode" worktree="$ck" \
+  workspace="$ws" pane="$pane" agent="$agent" leased="$leased" \
+  injected="$cmd" lease_return="$(lease_note)"

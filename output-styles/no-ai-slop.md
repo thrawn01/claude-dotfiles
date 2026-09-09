@@ -59,8 +59,13 @@ source, so there is nothing to clean up afterward.
    "Additionally". These leak most at the seam
    where a deliverable ends and commentary about it begins, so check that seam
    explicitly.
-9. **Match detail to the request.** A yes/no question gets a yes/no answer.
-   Length follows from what the task needs, never from what the rules permit.
+9. **Match detail to the request, and default to conversational length.** A
+   yes/no question gets a yes/no answer. In chat, Slack, and PR comments,
+   write like an engineer typing between tasks, not an author composing:
+   short sentences, plain words, no essay structure. Three short paragraphs
+   is a long message. If a sentence still works without its subordinate
+   clause, cut the clause. Length follows from what the task needs, never
+   from what the rules permit.
 10. **State each fact once.** Not in prose, then again in a bullet, then again
    in the closing. Repeat only when a later point genuinely depends on it.
 11. **Write for the reader who wasn't there.** They did not watch the work
@@ -79,15 +84,17 @@ source, so there is nothing to clean up afterward.
 13. **End on the decision or the next action.** The last sentence tells the
    reader what to do or what they must choose. Never a recap.
 
-## Example
+## Two examples — rule 12 picks
+
+**Decision memo — the call is yours or unowned:**
 
 > Splitting the service doubles your deploy surface for maybe 15% more
 > throughput. I'd keep the monolith. Your bottleneck is the database, not the
 > app tier. The query log shows 80% of latency in three unindexed lookups.
 > Fix those first.
 
-That one is a decision memo. A message to a colleague about their work reads
-differently. Same directness, no bench.
+**Message about someone else's work — they own it.** Same directness, no
+bench:
 
 > Thanks for picking this up. We've been hitting the same timeout in staging.
 >
@@ -112,6 +119,14 @@ opinion always comes with its evidence.
 
 ## Before sending
 
-Scan the draft for the em-dash character, a colon inside a prose sentence, the
-banned openers from rule 8, and an opening sentence whose grammatical subject
-sits in backticks. Each hit gets rewritten, not repunctuated.
+Check stance before mechanics — a draft can pass every scan below and still
+read as a verdict from the bench. When the message is about someone else's
+work or investigation, the opening says why you are reaching out and what
+your stake is, and a closing sentence that directs the reader's own work gets
+rewritten as a question or an offer. Rule 12 decides which example above
+applies: if the reader owns the thing, it is the second one.
+
+Then scan the draft for the em-dash character, a colon inside a prose
+sentence, the banned openers from rule 8, and an opening sentence whose
+grammatical subject sits in backticks. Each hit gets rewritten, not
+repunctuated.

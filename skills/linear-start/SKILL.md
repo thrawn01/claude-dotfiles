@@ -11,7 +11,7 @@ description: "Pick up a Linear ticket and start working it. Fetch the ticket, ve
   first. Do NOT use to merely create a ticket or to open a PR — those belong to the
   ticket-creation and PR skills."
 argument-hint: "<linear-id-or-url>"
-allowed-tools: [Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Skill]
+allowed-tools: [Bash, Read, Edit, Write, Glob, Grep, AskUserQuestion, Skill, SendMessage, ListAgents]
 ---
 
 # Start a Linear ticket
@@ -30,6 +30,18 @@ beyond a straightforward bug/improvement fix.
 - A git repository with remote `origin`.
 - The session runs inside the worktree/checkout where the work will happen — typically created
   from the ticket's branch name before the session (e.g. `claude-branch <branch>`).
+
+## 0. Captained or standalone?
+
+Check the `CAPTAIN_SESSION_NAME` environment variable **first**. If set, this session is a worker
+launched by `/captain` (via `captain-launch`) and the **captain worker contract**
+(`~/.claude/skills/shared/captain-worker-contract.md`) governs this **entire run** — every section
+below, including §1–§5's own ask/stop lines — read it now. In short: your turn does not end until
+the PR is open and CI green (gate 1) or you send a typed halt; the contract's conversion rule
+turns every "ask/tell the user" in this skill into a typed halt to the captain, never
+`AskUserQuestion`; and the last act before going idle is always the fixed-shape report to
+`$CAPTAIN_SESSION_NAME`. When the variable is unset, this skill behaves exactly as written
+below — a human is driving.
 
 ## 1. Resolve the Linear id
 
@@ -172,7 +184,21 @@ statement? desired outcome? constraints? acceptance criteria?) and offer to eith
 ticket author for detail via a Linear comment, or (b) work through it together now and then run
 `/blueprint-create`.
 
+**Captained sessions (§0) don't run the feature path solo — with one carve-out.** If a blueprint
+already exists (`docs/features/<TEAM>-<NUM>-*/blueprint.md`), the design conversation already
+happened: proceed to implementation against it, through to the contract's gate 1. Otherwise,
+`/blueprint-create` is a live design discussion and a worker has no human in its pane — send a
+`blocked_on_design` (enough detail, needs a design conversation) or `blocked_on_human` (not
+enough detail) halt per the worker contract instead of invoking `/blueprint-create` or waiting on
+a question. The bug and improvement routes proceed as written — through to the contract's gate 1,
+not just to "code written".
+
 ## Completion / handoff
+
+**Captained (§0):** this block is not the end of your turn — the worker contract's postcondition
+is. Keep working the routed path until gate 1 (PR open, CI green, bot comments addressed), then
+send the contract's fixed-shape report to `$CAPTAIN_SESSION_NAME`. The status block below is for
+standalone sessions, where a human reads it in the pane.
 
 After routing, leave a clear status:
 
@@ -195,6 +221,14 @@ handoff to the right container (a **project status update** for a multi-ticket b
 `docs/**/handoff.md` to durable pointers only.
 
 ## Early exits
+
+Captained sessions (§0) convert every "ask the user" **and every "stop and tell the user"** in
+this skill — inline in §§1–5 as well as in this table — into a typed halt per the worker
+contract's conversion rule. Mappings: unresolvable id, Done/Canceled ticket (§2), assignee held
+by someone else (§3), or unclear category (§5) → `blocked_on_human`; branch mismatch or a
+stale-with-commits branch (§4) → `blocked_on_dependency`, quoting the git evidence; no Linear
+MCP → `blocked_on_access`. The exit still happens; it just travels as a message to the captain
+instead of a question into an unwatched pane.
 
 | Condition | Action |
 |---|---|

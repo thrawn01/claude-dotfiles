@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# claude shim (captain workflow). Worker workspaces get this dir first on
+# PATH plus CAPTAIN_SESSION_NAME in the env (set by captain-launch; herdr
+# replays both on restart). Any interactive claude started in the pane —
+# herdr's bare `claude --resume`, or the user's /quit-and-restart — comes
+# back named as its ticket and accepting peer messages, without anyone
+# remembering argv. Print-mode invocations (-p/--print) pass through
+# untouched: naming one would steal the worker's address (latest-wins)
+# for a throwaway session.
+set -u
+args=("$@")
+named=0 has_settings=0 print_mode=0
+for a in "$@"; do
+  case $a in
+    -n|--name)  named=1 ;;
+    --settings) has_settings=1 ;;
+    -p|--print) print_mode=1 ;;
+  esac
+done
+if [ "$print_mode" = 0 ]; then
+  if [ "$named" = 0 ] && [ -n "${CAPTAIN_SESSION_NAME:-}" ]; then
+    args+=(-n "$CAPTAIN_SESSION_NAME")
+  fi
+  if [ "$has_settings" = 0 ]; then
+    args+=(--settings '{"crossSessionInbound":"accept"}')
+  fi
+fi
+# exec the next `claude` on PATH beyond this shim (chains into repo shims fine)
+self_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+real=""
+while IFS= read -r cand; do
+  [ "$cand" = "$self_dir/claude" ] && continue
+  real=$cand; break
+done < <(type -ap claude)
+[ -n "$real" ] || { echo "captain claude shim: no real claude found on PATH" >&2; exit 127; }
+exec "$real" "${args[@]}"

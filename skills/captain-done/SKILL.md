@@ -11,7 +11,7 @@ description: "Finish a Linear ticket from inside its worktree and hand it back t
   ticket comment (that's /linear-handoff issue mode), or when the work isn't part of a captain-managed
   project."
 argument-hint: "[ticket-id]  (defaults to the current branch's ticket)"
-allowed-tools: [Bash, Read, Grep, Glob, AskUserQuestion]
+allowed-tools: [Bash, Read, Grep, Glob, AskUserQuestion, ListAgents, SendMessage]
 ---
 
 # Hand a finished ticket back to the captain
@@ -51,6 +51,15 @@ Never post a `## Captain —` heading (that's the captain's) and never omit the 
   `project` — that's the captain's timeline. No project ⇒ this is the wrong skill; use
   `/linear-handoff`.
 - The PR is **actually merged** (you verify it in §2 — never assume).
+
+## 0. Captained or standalone?
+
+If the `CAPTAIN_SESSION_NAME` environment variable is set, this session is a captained worker and
+the **worker contract** (`~/.claude/skills/shared/captain-worker-contract.md`) applies: every
+"stop and tell the user" or "confirm with the user" below converts to a typed halt message to the
+captain (a not-actually-merged PR in §2 is `blocked_on_dependency` with the `gh` output as
+evidence; a shipped-without-a-PR uncertainty is `blocked_on_human`), never `AskUserQuestion` into
+an unwatched pane. When unset, behave exactly as written — a human is driving.
 
 ## 1. Resolve the ticket and its project
 
@@ -132,6 +141,17 @@ Posting is the go-ahead — don't display the body for approval first.
 
 Give the user the project Updates URL and a one-line summary: ticket set Done, `## Ticket Done` posted
 to the project, PR #/sha, and any follow-up you flagged for the captain.
+
+## 7. Wake the captain
+
+The project's captain, when running, is the session named `captain-<project-slug>` (e.g.
+`captain-git-server`). If `ListAgents` shows it, `SendMessage` it this ticket's close-out — and
+this message doubles as the worker contract's final report, so send it in the contract's
+`## Worker report` shape with `Stage: merged` (PR line carries the number/sha; note the
+`## Ticket Done` post and the worktree path in it). One message, not a report plus a one-liner.
+The message is a wake-up, not state: the captain re-reads Linear regardless, so if no captain is
+listed, skip this silently — the timeline entry you just posted is the durable signal, and the
+contract's report-then-idle obligation is satisfied by it.
 
 ## Boundaries
 
