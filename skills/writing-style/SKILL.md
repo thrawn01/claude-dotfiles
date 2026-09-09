@@ -1,6 +1,6 @@
 ---
 name: writing-style
-description: Write or edit long-form prose in the user's essayist voice. One claim per paragraph, each claim carrying its mechanism, authority from reasoning and real evidence, never from manufactured anecdote or persona tics. Use for blog posts, explainers, tech specs, engineering communications, and any long-form writing the user asks for. Activated when the user asks to "write a post", "draft a blog", "write up X", "edit this for style", "review this for my style", or invokes /writing-style directly.
+description: Write or edit long-form prose in the user's essayist voice. One claim per paragraph, each claim carrying its mechanism, authority from reasoning and real evidence, never from manufactured anecdote or persona tics. Use for blog posts, essays, tech specs, and engineering communications. Do NOT use for newcomer explainers, concept sections, or end-user documentation (use writing-prose). Activated when the user asks to "write a post", "draft a blog", "write up X", "edit this essay for style", "review this for my style", or invokes /writing-style directly.
 ---
 
 # Essayist Voice
@@ -13,22 +13,35 @@ each medium.
 
 ## 1. The Voice
 
+### Assume the reader's context
+Decide who the piece is for before writing a line, then write to that person as
+someone who already knows what anyone in their position knows. English runs on what
+the reader supplies. Spend the words on the material, the thing this piece exists to
+say, and leave the surrounding knowledge to the reader. Spelling out what they
+already know doesn't add clarity. It distracts from the point and turns the piece
+into a legal document. If a sentence would be obvious to the intended reader, cut it
+or fold it into the sentence that needs it. A paragraph is measured by how fast it
+reaches something that reader didn't know.
+
 An engineer explaining why a thing is the way it is. Authority comes from
 reasoning first and evidence second. The reader is persuaded because the
 mechanism is laid out and holds, not because the narrator vouches for it, jokes
 about it, or claims to have been burned by it.
 
-Three sentences from the tiger explainer carry the whole voice.
+Three samples carry the whole voice. They are on subjects unrelated to
+anything the skill will be asked to write, on purpose. Match how they are
+written and take nothing from what they say.
 
-> A pin changes nothing at run time. It changes what CI enforces.
+> A backup nobody has restored is a hope. A restore that ran last week is a
+> backup.
 
-> None of these are bugs a sharper reviewer catches on a better day. They
-> survive good reviewers because a reviewer answers "does this loop terminate on
-> hostile input?" once, when the loop is written, and never again, while the code
-> around it keeps changing. The rule asks on every commit.
+> None of these outages are ones a more careful operator prevents on a better
+> night. They survive careful operators because an operator answers "what happens
+> when this disk fills?" once, when the volume is provisioned, and never again,
+> while the writes to it keep growing. The alert asks every minute.
 
-> Zero suppressions in the target code across both trials. Hold us to that when
-> you run it on yours.
+> Forty migrations in two years, none over four minutes. Time yours before you
+> decide the table lock is acceptable.
 
 ### Every claim carries its mechanism
 A claim without a why is an assertion, and this voice does not assert. "Deferred
@@ -37,10 +50,20 @@ one costs less to skip than to make" is the voice. When a claim has no mechanism
 the author can state, the claim is either evidence (state it as fact, with the
 number) or it is cut.
 
+### A mechanism is derived, never supplied
+The demand for a why has its own failure mode. Asked for a mechanism the source
+does not state, the writer will invent one ("an agent can push back against a
+judgment, resubmit around it, or outlast it", "an annotated tag chains down to
+the commit it describes"). A mechanism is on-voice only when it follows from
+facts the source states or from how the system demonstrably works. A claim
+about how reviewers, agents, users, or third-party tools behave that the source
+does not make is an invented specific and goes on the list in section 11, even
+when it is plausible. When no mechanism can be derived, state the fact and stop.
+
 ### Evidence is used, never manufactured
 When the author supplies real numbers, incidents, or trial results, state them
-plainly and let them carry weight ("Tiger found ten real bugs", "1,023 blocking
-findings on a 42,000-line queue"). When the author has not supplied evidence, the
+plainly and let them carry weight ("the restore took eleven minutes", "forty of
+the two hundred alerts in March were pages nobody acted on"). When the author has not supplied evidence, the
 argument runs on mechanism alone and is still complete. Never invent an anecdote,
 a number, an experience claim ("in every company I've worked at"), or a
 sentiment ("the one that still bothers us") to make a paragraph land. Invented
@@ -63,7 +86,20 @@ supplies the mistake; it is never generated.
 
 ### Pronouns
 "We" is an actual team and shared credit. "I" is the author's own experience or
-opinion. "You" is the reader, addressed directly and often.
+opinion. "You" is the reader, and is used only in sentences that are about the
+reader (see below). Pick one narrator
+for the whole piece and keep it. A document that says "the project calls this
+the ratchet" and "the teams that wrote them" in one section and "Hold us to
+that" in the next has two narrators, and the reader notices the seam.
+
+### The reader is not a device
+Addressing the reader is for sentences that are actually about them, what they
+will do, decide, or see. Reaching for "you" to make a sentence feel direct puts
+the reader inside a claim about something else, and the sentence ends up telling
+them what they do or have, which is presumptuous and often wrong. Warmth comes
+from plain statements about the subject, not from recruiting the reader into
+them. The test is to strike "you" and see what's lost. If only a tone is lost,
+the sentence was about the subject all along.
 
 ## 2. Sentences and Paragraphs
 
@@ -105,17 +141,20 @@ Restructure the sentence.
 ### No dashes
 Almost never use `-`, `--`, or `—` as punctuation in prose. The dash marks the
 writer stepping outside the sentence to qualify it from a second vantage point
-("a pin changes nothing at run time — only what CI enforces"), which is the
+("a retry costs nothing — until the dependency is down"), which is the
 multi-position cadence section 1 bans, showing up at the punctuation level. The
 fix is never punctuation surgery; swapping the dash for a comma leaves the hedge
 in place. Rewrite from the committed angle and the dash disappears. State the
 claim, end with a period, and the qualifier either becomes the next sentence or
-turns out not to be needed ("A pin changes nothing at run time. It changes what
-CI enforces.").
+turns out not to be needed ("A retry costs nothing while the dependency is up.
+When it is down, every retry is one more request it cannot serve.").
 
 Table cells, glossary rows, and other label-elaboration pairs are labels, not
 prose, so a colon is fine there. En-dashes in ranges (`TS-S01–S22`, `2020–2022`)
-and hyphens in compounds stay.
+stay. Hyphens inside compound words are spelling, not punctuation, and stay:
+"hand-written", "long-lived", "compile-time", "whole-program", "machine-written",
+"end-of-run". Stripping them ("hand written", "long lived") is an error, not
+compliance.
 
 ### Parentheticals
 A parenthetical is for a gloss the reader needs in place (a rule code, a
@@ -217,8 +256,11 @@ to a related post or a deferred topic is fine; a "Conclusion" section is not.
 ## 7. Structure
 
 - `##`/`###` headings every 2-4 paragraphs. When a section carries an argument,
-  the heading is the claim ("Tiger is not a linter", "Failure Is the Normal
-  State, Not the Exception"). Never a dash-subtitle heading ("Pins — computed by
+  the heading is the claim ("A retry is not a fix", "Failure Is the Normal
+  State, Not the Exception"), in ten words or fewer. A heading that needs a
+  subordinate clause to state its claim ("The declarations are the edge of what
+  any tool can prove, so that's where review stops asking for more") is the
+  section's first sentence, not its heading. Never a dash-subtitle heading ("Pins — computed by
   default"); a heading is one idea, and the qualifier becomes the section's
   first sentence.
 - Blockquotes for maxims and for cited external sources. One or two maxims per
@@ -283,16 +325,30 @@ whole piece ahead of the conversation.
 
 ## 11. Review Cycle
 
-Any substantial output (a post, a spec, an edited article) goes through a review
-pass before it reaches the user. Skip it only for short-form output (Slack
-messages, emails) or trivial edits.
+Every draft shown to the user goes through the review pass first, down to a
+single paragraph in a back-and-forth. The only exceptions are short-form output
+(Slack messages, emails) and typo-level edits. A draft that has not been reviewed
+is not shown, and the message that presents a draft says the review ran and lists
+what survived it.
 
-1. **Style reviewer** (always runs). A sub-agent that gets the text and the path
-   to this skill file and must Read the file itself. It lints against sections
-   1 through 8, with special attention to claims missing their mechanism
-   (section 1), one committed angle, and the anti-pattern list in section 5. It
-   returns a list of violations, each with the quoted text and the rule. It does
-   NOT rewrite.
+The writing itself is not delegated. A sub-agent handed a facts list produces a
+list of facts in prose, because nothing in its brief carries the idea the facts
+serve. The author of the piece drafts; sub-agents review.
+
+1. **Style reviewer** (always runs). A sub-agent that gets the text, the path to
+   this skill file, and a one-line statement of who the piece is for, and must
+   Read the skill file itself. Its first question is about the section as a
+   whole: what is this section explaining, does every paragraph advance it, and
+   could the intended reader say the idea back in a sentence afterward. If the
+   reviewer cannot name the idea, the draft fails there and the sentence tests
+   are not run. Its next pass is the reader test from section 1,
+   sentence by sentence: given who this is for, which sentences tell the reader
+   something they already knew, which sentences does nothing downstream depend
+   on, and which sentences put the reader inside a claim about the subject. Its
+   second pass lints against sections 1 through 8, with special
+   attention to claims missing their mechanism (section 1), one committed angle,
+   and the anti-pattern list in section 5. It returns a list of violations, each
+   with the quoted text and the rule. It does NOT rewrite.
 
 2. **Fidelity reviewer** (runs whenever there is source material the output must
    stay true to). The source is authoritative for facts; every point in it
@@ -305,6 +361,11 @@ messages, emails) or trivial edits.
      tool names, incident details, experience claims, and sentiment claims
      ("we didn't trust the rules until", "the one that still bothers us"). The
      list is exhaustive and unjudged; the user decides what stands.
+
+A writer's self-lint is not a substitute for the style reviewer. In testing,
+writers who were told to lint their own drafts against section 5 still produced
+the exact drumroll example that section quotes ("None of these rules are
+original."). Fresh eyes catch what the writer's do not.
 
 Run the applicable reviewers in parallel, fix what they report, and re-run on the
 revision. Max 2 rounds; nits that survive get fixed directly. Always present the
@@ -322,9 +383,9 @@ Full voice. "I" for the author's experience and opinion, a real story when the
 author supplies one, maxims in blockquotes, a closing that points forward.
 
 ### Explainers and end-user documentation
-Full voice. Sections open on the principle, evidence is labeled as real, the
-reader is "you" throughout. Explains why the system is the way it is, not just
-what it does.
+Not this skill. Explanatory prose for a reader meeting the subject for the first
+time is written under writing-prose, which has its own register and its own
+reviewer.
 
 ### Tech specs
 Same register, compressed. Headers short and declarative. The argument pattern
