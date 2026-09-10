@@ -317,6 +317,8 @@ to do unprompted.
     past it).
 - **Anything else the user asks** — planning the remaining work, drafting tickets, reasoning about
   scope — do it. The loop is the default, not the boundary.
+- **Clean-context implementation start** — when asked to restart a worker's build with fresh
+  context, follow the sequence in its own section below.
 
 ## 6. Persist
 
@@ -458,6 +460,29 @@ don't wait; `pool_exhausted` = proven full — wait for a return).
   without submitting) and **verifies the text landed**.
 - On `injection_unconfirmed`, the worker is up but the command did not stick — `.detail` carries
   the manual inject command; check the pane before assuming the worker started.
+
+## Clean-context implementation start (on request)
+
+When the user wants a worker to begin implementation with a fresh context — typically after a long
+design/blueprint phase has filled the session with dead-end reasoning — run this sequence on the
+worker's pane. Only on request; the default is to let the worker roll straight into its build.
+
+1. **Persist everything that lives only in the worker's context.** Prompt the worker to: file any
+   unfiled Linear tickets it drafted, commit the blueprint/ADRs/docs to its branch, and then print
+   the exact `/goal …` command **by itself as its final message**. Wait for it to finish (watch for
+   the emitted command, not just idle).
+2. **Capture the `/goal` command verbatim** from the pane (`herdr agent read <pane> --source visible`).
+   It must reference on-disk files (the blueprint) — never context — as the source of truth.
+3. **Clear:** inject `/clear` and submit. The slash-command autocomplete menu can eat the Enter and
+   leave `/clear` sitting in the input box — if the context meter hasn't reset, send `escape`, then
+   `herdr agent prompt <pane> "/clear"`, then `herdr pane send-keys <pane> enter`. **Verify the
+   meter reads `--`/0 tokens before pasting**; pasting into an uncleared session defeats the point.
+4. **Paste:** `herdr agent prompt <pane> "<the /goal command>"`, then send `enter` and confirm the
+   worker started processing (context meter starts climbing).
+
+The invariant behind the sequence: after step 1, nothing the build needs may exist only in the old
+conversation — branch + Linear must carry it all. If the worker's final message references "the
+decision above" or similar context-relative material, make it write that into the blueprint first.
 
 ## Guardrails (stay correct — not a scope limit)
 
