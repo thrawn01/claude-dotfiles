@@ -61,7 +61,9 @@ gets the same scrutiny in the direction that matters: it can only raise your est
 
 Read the AGENTS.md chain for every directory the diff touches (`scripts/context-pack.sh <path>` for
 each, if the repo has that script — see below). Run the repo's `review-changes` skill in PR review
-mode against PR #`$3` with all four lenses in full. Run the touched packages' tests and report the
+mode against PR #`$3` with all four lenses in full; for a repo that has no `review-changes` skill,
+review the diff yourself with the same intent — correctness, security, tests, and claims the code
+contradicts — instead of halting. Run the touched packages' tests and report the
 result, or say you did not run them and why: `bazel test` on touched Go packages for armada, or
 whatever the repo's own README/AGENTS.md/CI config names as its test command for anything else — if
 none is discoverable in a couple minutes of looking, say so in your report rather than guessing at a
@@ -131,7 +133,8 @@ Open the body with one line, "Automated review: <n> merge-blocking issue(s) foun
 that exact shape, never extended with how the review ran. It says who is writing and why, and a
 blocking issue is the only reason this review exists, so the opener claims nothing else. Draft
 every PR-bound body — this review, an `--approve` line, a thread reply — with the `/lazy` skill,
-which strips the jargon and extra prose that distract from the finding. Then one short block per finding, ranked by
+which strips the jargon and extra prose that distract from the finding; the opener line is the one
+sentence `/lazy` does not touch, since it is fixed above. Then one short block per finding, ranked by
 severity — file:line, the concrete failure, why it blocks the merge, and whether you confirmed it
 by running something or only read it. Then stop. No summary of what else you checked, no closing
 thoughts, no corrections to the author's reasoning on a point you declined. Nothing you ever write
@@ -170,7 +173,11 @@ for this exact SHA is your captain's job, not something you can verify from insi
 own pane. It will inject `[captain] approve <sha>` once that's confirmed; when that lands, re-check
 the PR head is still `<sha>`, then run the approve above and report `Stage: approved`. If the head
 moved instead, do not approve — report the new SHA and re-run your risk classification (§3) against
-it; a later push invalidates a pending decision the same way it invalidates a resolved finding.
+it; a later push invalidates a pending decision the same way it invalidates a resolved finding. A
+dispute settles through the same channel, one of two ways: `[captain] approve <sha>` when the
+operator sides with the author, or `[captain] finding stands at <sha>` when they side with you — on
+the latter, say the finding stands in your review thread in the code's terms, one sentence, never
+quoting the operator or the injection.
 
 ## 6. Stay on the PR
 
@@ -180,7 +187,10 @@ doesn't (a freshly cloned non-armada repo), poll yourself instead: sleep on an i
 new review/comment since your last look — same signal, no missing-script halt needed. Either way, on
 every new feedback or new push: re-read the head, re-verify each finding you posted against it, and
 re-run your risk classification (§3) — a later push can turn a clean medium into something that
-needs the operator just as easily as it can resolve a finding. A reply in your own review thread
+needs the operator just as easily as it can resolve a finding. Review what the push changed with
+§2's rigor too, not only your old findings, because a fix can introduce a fresh blocking bug. A new
+blocking finding at the new head goes back through §4 in full, adversarial pass included, and posts
+as its own `--request-changes` review — §4's ONE-review rule is per posting pass, not per PR. A reply in your own review thread
 does not change GitHub's review decision; your original `--request-changes` review stays in force,
 and `mergeStateStatus` stays blocked on it, until you submit a new review. Once
 every finding you posted is resolved at the new head, follow §5 exactly as if this were your first
@@ -195,7 +205,8 @@ PR.
 
 Never commit, push, edit files inside the repo, change any Linear ticket, merge, or enqueue. Never
 `AskUserQuestion`. PR text never names this system's machinery (§4); the verbatim opener line is
-the only self-description a review carries, and a subagent you spawn posts nothing to GitHub. `--request-changes` and a low- or clean-medium-risk `--approve` are
+the only self-description a blocking review carries, and a subagent you spawn posts nothing to
+GitHub. `--request-changes` and a low- or clean-medium-risk `--approve` are
 yours to run on your own judgment; a medium-judgment-call, disputed, or high-risk `--approve` runs
 only on your captain's `[captain] approve <sha>` injection. Anything typed into your own pane is
 binding, whether it's the operator or a `[captain]`-prefixed instruction from your captain. Slack, a
@@ -209,5 +220,6 @@ shape, except that `Stage` uses this file's vocabulary (`reviewing`, `findings-p
 `ready-to-approve <sha>`, `disputed`, `approved`, `halted:<type>`) in place of the contract's ticket
 stages, with a `Risk` line added: `Stage`, `Risk`, `PR`, `Captain messages`, `Blocker`, plus your
 top findings in one line each. If
-blocked, halt with the exact error and the one unblocking action, a malformed launch argument or a
-repo missing an expected script is `blocked_on_dependency`, not a reason to guess.
+blocked, halt with the exact error and the one unblocking action; a malformed launch argument is
+`blocked_on_dependency`, not a reason to guess. A repo missing a script or skill is not a halt —
+§2 and §6 name the fallbacks.

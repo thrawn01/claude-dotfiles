@@ -1,6 +1,6 @@
 ---
 name: review-status
-description: One-shot status pass over every PR review-captain is tracking in #armada-privileged-reviews — nudges idle workers to re-fetch their PR's current GitHub state, then reports what's waiting on the operator, unassigned, or updated via Slack since the last tick. Read-only against the ledger; never launches a worker or writes state, that stays review-captain's job.
+description: "One-shot status pass over every PR review-captain is tracking in #armada-privileged-reviews — nudges idle workers to re-fetch their PR's current GitHub state, then reports what's waiting on the operator, unassigned, or updated via Slack since the last tick. Read-only against the ledger; never launches a worker or writes state, that stays review-captain's job."
 ---
 
 # Review status — ad hoc report on in-flight reviews
@@ -72,7 +72,7 @@ mid-generation output, **leave it alone** — injecting into a busy worker inter
 no gain. If it's sitting at rest:
 
 ```
-herdr agent prompt <pane> "[captain] status check — re-read PR #<n>'s current state on GitHub right now (gh pr view, checks, reviews, comments) as if you're looking at it fresh, even if you think nothing changed, and re-run your risk classification against the current head. Then SendMessage me a normal ## Worker report with your Stage and Risk."
+herdr agent prompt <pane> "[captain] status check — re-read PR #<n>'s current state on GitHub right now (gh pr view, checks, reviews, comments) as if you're looking at it fresh, even if you think nothing changed, and re-run your risk classification against the current head. Then SendMessage armada-reviews a normal ## Worker report with your Stage and Risk."
 ```
 
 Record which panes got nudged this pass so the operator knows which workers might report back in the
