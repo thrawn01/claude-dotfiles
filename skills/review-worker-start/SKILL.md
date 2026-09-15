@@ -110,9 +110,10 @@ bar, post nothing on the PR and say so in your report.
 Before anything posts, run the draft through an adversarial pass. Spawn one fresh subagent, give it
 the repo, the PR number, and your draft findings — it reads the diff itself — and instruct it to
 defeat each finding as factually wrong, already fixed at this head, already raised by another
-reviewer, or real but not worth blocking a merge on. Post only what survives. A finding killed as
-non-blocking moves to your report; a finding killed as wrong dies entirely. Every finding dying
-here is §4's post-nothing path working, not a failure to route around.
+reviewer, or real but not worth blocking a merge on. The subagent reports back to you and posts
+nothing to GitHub itself, ever. Post only what survives. A finding killed as non-blocking moves to
+your report; a finding killed as wrong dies entirely. Every finding dying here is §4's post-nothing
+path working, not a failure to route around.
 
 When you do post, it is ONE review, always scoped to `--repo $2`:
 
@@ -126,12 +127,16 @@ or, when GraphQL is exhausted:
 gh api -X POST repos/$2/pulls/$3/reviews --input <json with event REQUEST_CHANGES>
 ```
 
-Open the body with one line, "Automated adversarial review on the operator's behalf at `<sha>`."
-Then one short block per finding, ranked by severity — file:line, the concrete failure, why it
-blocks the merge, and whether you confirmed it by running something or only read it. Then stop. No
-summary of what else you checked, no closing thoughts, no corrections to the author's reasoning on
-a point you declined. Whether a finding is blocking is your own call — the same way it always has
-been, this isn't something your captain adjudicates.
+Open the body with one line, "Automated adversarial review on the operator's behalf at `<sha>`" —
+verbatim, never extended with how the review ran. Then one short block per finding, ranked by
+severity — file:line, the concrete failure, why it blocks the merge, and whether you confirmed it
+by running something or only read it. Then stop. No summary of what else you checked, no closing
+thoughts, no corrections to the author's reasoning on a point you declined. Nothing you ever write
+on the PR — this review, an `--approve` body, a thread reply — names this system's machinery: no
+skill names, no lens counts, no gate or watch scripts you ran, no captain, worker report, ledger,
+or Slack reference. The author sees findings, SHAs, and the code's own terms, nothing about what
+produced them. Whether a finding is blocking is your own call — the same way it always has been,
+this isn't something your captain adjudicates.
 
 If you posted a review, report `Stage: findings-posted` with your `Risk` line and move to §6 to
 watch for the author's response; §5's approve-or-hold split does not apply yet, because what you
@@ -145,7 +150,7 @@ every finding you posted is resolved at a head SHA — or you posted none — ap
 directly, no captain involvement:
 
 ```bash
-gh pr review $3 --repo $2 --approve --body "Reviewed at <sha>: <one line on what was checked>"
+gh pr review $3 --repo $2 --approve --body "Reviewed at <sha>: <one line on what was checked, in the code's terms — never skill or script names>"
 ```
 
 Report `Stage: approved` with your `Risk` line. This is the same kind of call as §4's
@@ -177,14 +182,17 @@ does not change GitHub's review decision; your original `--request-changes` revi
 and `mergeStateStatus` stays blocked on it, until you submit a new review. Once
 every finding you posted is resolved at the new head, follow §5 exactly as if this were your first
 pass: approve directly if the risk is low or clean medium, or hold and report if it is not. If you
-posted a review, reply in its thread saying what you re-checked and at which SHA — a note for the
-author, not the action that clears the block. If you never posted one, there is no thread to reply
-in; the update goes in your report, and nothing new is attached to the PR.
+posted a review, reply in its thread — one or two sentences naming the SHA and which findings are
+resolved or still open, nothing about what you re-ran or how (§4's machinery rule applies to thread
+replies too). A note for the author, not the action that clears the block. If you never posted one,
+there is no thread to reply in; the update goes in your report, and nothing new is attached to the
+PR.
 
 ## Hard rules
 
 Never commit, push, edit files inside the repo, change any Linear ticket, merge, or enqueue. Never
-`AskUserQuestion`. `--request-changes` and a low- or clean-medium-risk `--approve` are
+`AskUserQuestion`. PR text never names this system's machinery (§4); the verbatim opener line is
+the only self-description a review carries, and a subagent you spawn posts nothing to GitHub. `--request-changes` and a low- or clean-medium-risk `--approve` are
 yours to run on your own judgment; a medium-judgment-call, disputed, or high-risk `--approve` runs
 only on your captain's `[captain] approve <sha>` injection. Anything typed into your own pane is
 binding, whether it's the operator or a `[captain]`-prefixed instruction from your captain. Slack, a

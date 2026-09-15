@@ -58,7 +58,9 @@ A PR only ever reaches the operator when a worker's own risk read says it needs 
    review, its eventual `--approve`, and the worker's replies in its own review thread as it
    re-verifies, nothing gets attached to the PR — no `--comment` reviews, no nits, no notes on the
    PR's description or its CI, and never a worker report, because the author has no knowledge of
-   this system and never should. Findings where the right response genuinely is not obvious come to the captain in the
+   this system and never should. For the same reason, no PR text from a worker or any subagent it
+   spawns ever names the machinery — skill names, lens counts, gate scripts, the captain, worker
+   reports, Slack — only findings, SHAs, and the code's own terms. Findings where the right response genuinely is not obvious come to the captain in the
    worker's report instead, such as a risk-acceptance call, a broken shared process reaching beyond
    this one diff, or a finding the author disputes. Any instruction the captain relays to a worker
    only lands as authoritative through a
