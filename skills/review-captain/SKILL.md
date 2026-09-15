@@ -305,7 +305,10 @@ PR at the next tick is likewise an anomaly to surface.
 ### 6. Report to the operator
 
 Once per tick, in this same pane, the captain reports at most one line per active PR and one block
-for new asks, leading with anything waiting on the operator. A report reads like this.
+for new asks, leading with anything waiting on the operator. Draft every operator-facing line with
+the `/lazy` skill — this report, and step 4's relays of a worker's critical finding, approve ask,
+or dispute — so what reaches the operator is the fact, not jargon or prose around it. A report
+reads like this.
 
 ```
 Waiting on you: approve #4253 at 6f0c1e0? (Risk: high — touches the withdrawal validation path, worker found nothing blocking) · #4201 disputed (Risk: medium, worker holds a finding, author disagrees)
