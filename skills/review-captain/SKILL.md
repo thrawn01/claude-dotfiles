@@ -1,15 +1,19 @@
 ---
 name: review-captain
-description: "Orchestrate the #armada-privileged-reviews Slack channel. Hourly, read every review ask, launch one pooled review worker per open PR, relay critical findings, and track author responses. Bring the operator a decision only when a worker's own risk read calls for one; a worker approves a low-risk or clean-medium-risk PR itself. Runs in its own named session (armada-reviews), never inside a project captain."
+description: "Orchestrate a privileged-reviews Slack channel for one repo. Hourly, read every review ask, launch one pooled review worker per open PR, relay critical findings, and track author responses. Bring the operator a decision only when a worker's own risk read calls for one; a worker approves a low-risk or clean-medium-risk PR itself. Runs in its own named session, never inside a project captain. First run takes the Slack channel id as its argument; ticks read it from the ledger."
+argument-hint: "<slack-channel-id> (first run) | tick"
 ---
 
-# Review captain — #armada-privileged-reviews
+# Review captain — privileged PR reviews
 
-The **review captain** is a persistent orchestrator for one Slack channel, `#armada-privileged-reviews` (channel id `C0BPLP0ML0G`).
+The **review captain** is a persistent orchestrator for one Slack channel, the reviews channel of
+the repo it serves. The channel id arrives as this skill's argument on the first run and lives in
+the ledger's `channel_id` from then on; a tick that finds neither an argument nor a ledger has a
+configuration problem to surface to the operator, not a channel to guess.
 
 Every PR posted there gets an adversarial review from a worker running in its own pooled tree, driven by the `/review-worker-start` skill. The worker owns its own PR from launch through resolution, watching for the author's response and re-verifying its own findings on every new head. The captain's own job is narrower than the worker's; it relays what a worker reports, and it brings the operator a decision only when a worker's own risk classification says one is genuinely needed, such as a judgment-call finding, a dispute, or anything the worker calls high risk. Most PRs come back clean at low or medium risk, and the worker approves those itself. The captain never approves a PR, never merges one, and never edits code.
 
-The captain runs in a session named **`armada-reviews`**, started by the `review-captain` fish function (`claude -n armada-reviews --settings '{"crossSessionInbound":"accept"}' "/review-captain"`). On startup it runs `ListAgents` to confirm its own session name. If the printed name is not `armada-reviews`, workers launched later will not be able to find it. It tells the operator this and keeps going anyway.
+The captain runs in its own named session — `<repo>-reviews` by convention — started by a launcher that names it, such as a fish function running `cd ~/<repo>-reviews && claude -n <repo>-reviews --settings '{"crossSessionInbound":"accept"}' "/review-captain <channel-id>"`. On startup it runs `ListAgents` to confirm its own session name; that confirmed name, not any assumed one, is what every worker gets as its first launch argument, so workers can always message back. A name other than the conventional one is mentioned to the operator once and changes nothing else.
 
 The operator does not have to wait for the hourly tick to see what is in flight. Running `/review-status` gives an ad hoc snapshot of every PR the captain is tracking, covering what is waiting on the operator, what has no worker yet, and what changed over Slack since the last tick. That skill reads the same ledger the captain does and nudges idle workers the same way step 2a does. It never writes the ledger and never launches a worker, so it can run at any time without racing the captain's own tick.
 
@@ -43,8 +47,8 @@ A PR only ever reaches the operator when a worker's own risk read says it needs 
    is approved, reply in the ask's thread with `:approved-github:`; when it merges,
    `:merged: merged at <sha>`. One reply per state change, never repeated.
 5. **One pooled tree per worker, from the review clone's own pool.** A review worker never leases
-   from `~/<repo>`'s pool; it leases from `~/<repo>-reviews`'s own `treehouse.toml` (`max_trees = 8`
-   for armada's review clone), which step 3 clones and configures itself if it is missing — a repo
+   from `~/<repo>`'s pool; it leases from `~/<repo>-reviews`'s own `treehouse.toml`
+   (`max_trees = 8`), which step 3 clones and configures itself if it is missing — a repo
    whose main clone has no pool gets a herdr worktree from the review clone instead. The pool
    cap is that number, not the number of trees minted so far. `captain-launch` leases the next tree
    on demand. Never mint a worktree path yourself and never reuse a worker for a second PR.
@@ -75,29 +79,29 @@ A PR only ever reaches the operator when a worker's own risk read says it needs 
 
 | Concern | Home | Truth? |
 |---|---|---|
-| Asks | Slack channel `C0BPLP0ML0G`, keyed by message `ts` | yes, for what was asked |
+| Asks | the review channel (ledger `channel_id`), keyed by message `ts` | yes, for what was asked |
 | PR state (open, merged, approvals, head SHA) | GitHub via `gh` | yes |
 | Your ledger | `~/captain-notes/privileged-reviews.json` | no, a mirror you rebuild from the two above |
 | Worker in flight | herdr workspace `pr-<n>-review`, treehouse lease holder `PR-<n>` | hint only |
-| Worker reports | cross-session messages to `armada-reviews` | wake-ups, never state |
+| Worker reports | cross-session messages to the captain's session | wake-ups, never state |
 | The operator's decisions | typed in this pane | recorded into the ledger the moment given |
 
 Ledger shape, one entry per Slack ask:
 
 ```json
 {
-  "channel_id": "C0BPLP0ML0G",
+  "channel_id": "<the channel id this captain was started with>",
   "last_seen_ts": "1789054030.490269",
   "asks": {
     "1789053425.550469": {
       "kind": "pr",
-      "repo": "anchorlabsinc/armada",
+      "repo": "<org>/<repo>",
       "pr": 4253,
-      "url": "https://github.com/anchorlabsinc/armada/pull/4253",
-      "asked_by": "Viktor Stanchev",
+      "url": "https://github.com/<org>/<repo>/pull/4253",
+      "asked_by": "<asker's display name>",
       "head_at_ask": "6f0c1e0fe87fc0d5e5c0bc5cd47af4af886bd79b",
       "state": "reviewing",
-      "worker": {"ticket": "PR-4253", "workspace": "pr-4253-review", "tree": "~/.treehouse/armada-reviews-5b6bbc/6/armada-reviews"},
+      "worker": {"ticket": "PR-4253", "workspace": "pr-4253-review", "tree": "~/.treehouse/<repo>-reviews-<hash>/6/<repo>-reviews"},
       "findings_posted": false,
       "risk": null,
       "ready_to_approve_sha": null,
@@ -128,12 +132,12 @@ On session start, create the cron once with `CronCreate` (cron `7 * * * *`, prom
 
 ### 1. Read the channel
 
-Each ask in the channel needs a ledger entry before it can be classified or launched, so the tick starts by pulling every message the captain has not already seen. Call `slack_read_channel` on `C0BPLP0ML0G` with `oldest` set to the ledger's `last_seen_ts`. On the
+Each ask in the channel needs a ledger entry before it can be classified or launched, so the tick starts by pulling every message the captain has not already seen. Call `slack_read_channel` on the ledger's `channel_id` (on the very first run, the skill's argument, written to the ledger before anything else) with `oldest` set to the ledger's `last_seen_ts`. On the
 very first run, when `last_seen_ts` is null, set `oldest` to seven days ago instead. Older asks are
 either already merged or someone else's problem, and the operator can name one explicitly if it
 needs adopting. Page forward until the connector reports no more messages, then set `last_seen_ts`
 to the newest `ts` read. For every message not already in the ledger, extract any
-`github.com/anchorlabsinc/<repo>/pull/<n>` URLs it contains. A message with no PR URL becomes a
+`github.com/<org>/<repo>/pull/<n>` URLs it contains. A message with no PR URL becomes a
 `kind: other` entry, state `skipped`, and gets one line in the next report. A message naming
 several PRs gets one ledger entry per PR, all sharing that message's `ts`. Finally, call
 `slack_read_thread` on each new ask. A reply saying the PR was approved or merged, or an author
@@ -142,16 +146,16 @@ saying it is closed, feeds step 2's own classification instead of being acted on
 ### 2. Classify against GitHub
 
 ```bash
-gh pr view <n> --repo anchorlabsinc/<repo> --json state,isDraft,mergedAt,headRefName,headRefOid,reviewDecision,reviews,url,title,author,baseRefName
+gh pr view <n> --repo <org>/<repo> --json state,isDraft,mergedAt,headRefName,headRefOid,reviewDecision,reviews,url,title,author,baseRefName
 ```
 
 A `gh pr view` failure with a GraphQL rate-limit error means the box's shared GraphQL budget is used
 up for the moment; the PR itself is still there. Fall back to REST instead, which draws from its own separate budget:
 
 ```bash
-gh api repos/anchorlabsinc/<repo>/pulls/<n>            # state, merged, draft, head.sha, head.ref, base.ref
-gh api repos/anchorlabsinc/<repo>/pulls/<n>/reviews    # who approved, at which commit_id
-gh api repos/anchorlabsinc/<repo>/commits/<sha>/check-runs
+gh api repos/<org>/<repo>/pulls/<n>            # state, merged, draft, head.sha, head.ref, base.ref
+gh api repos/<org>/<repo>/pulls/<n>/reviews    # who approved, at which commit_id
+gh api repos/<org>/<repo>/commits/<sha>/check-runs
 ```
 
 Whichever call succeeds, the same five outcomes decide what happens to the PR, checked in this order.
@@ -183,7 +187,7 @@ interrupts real work for nothing. A pane sitting at rest gets nudged with the sa
 `/review-status` step 4 uses:
 
 ```
-herdr agent prompt <pane> "[captain] status check — re-read PR #<n>'s current state on GitHub right now (gh pr view, checks, reviews, comments) as if you're looking at it fresh, even if you think nothing changed, and re-run your risk classification against the current head. Then SendMessage armada-reviews a normal ## Worker report with your Stage and Risk."
+herdr agent prompt <pane> "[captain] status check — re-read PR #<n>'s current state on GitHub right now (gh pr view, checks, reviews, comments) as if you're looking at it fresh, even if you think nothing changed, and re-run your risk classification against the current head. Then SendMessage your captain (your launch's first argument) a normal ## Worker report with your Stage and Risk."
 ```
 
 This check runs every tick, not only when the operator asks for `/review-status`. The ad hoc
@@ -198,8 +202,8 @@ per PR. The launch runs from a review clone at `~/<repo>-reviews`, never from `~
 that keeps a review worker's tree out of whatever pool a project captain is leasing from, so a
 review lease can never collide with in-progress ticket work, and the two captains' workers nest
 under their own session in herdr instead of sharing one header. The captain clones it once if it is
-missing (`gh repo clone anchorlabsinc/<repo> ~/<repo>-reviews -- --depth 50`) and, for a repo whose
-main clone has its own `treehouse.toml` (armada does), writes a matching one if `~/<repo>-reviews`
+missing (`gh repo clone <org>/<repo> ~/<repo>-reviews -- --depth 50`) and, for a repo whose
+main clone has its own `treehouse.toml`, writes a matching one if `~/<repo>-reviews`
 doesn't already have it:
 
 ```
@@ -217,24 +221,25 @@ for one that isn't; either way, the tree comes back checked out to the PR's bran
 ```bash
 cd ~/<repo>-reviews && ~/.claude/skills/captain/captain-launch "PR-<n>" "<headRefName>" \
   --label "pr-<n>-review" --model opus --no-focus \
-  --prompt "/review-worker-start armada-reviews anchorlabsinc/<repo> <n> <ask_ts>"
+  --prompt "/review-worker-start <captain-session> <org>/<repo> <n> <ask_ts> <channel-id>"
 ```
 
 `captain-launch` takes its repo root from `git rev-parse --show-toplevel` in its own invocation
 directory, not a flag, so the `cd` before it is what actually sends it to the review clone instead
 of the main one.
 
-The `--prompt` string carries only four values, and each one is shape-safe enough to trust
-directly. They are the captain's own session name (a fixed literal), the repo as `org/repo`, the
-PR number, and `<ask_ts>`, the Slack message `ts` this ask is keyed under in the captain's own
-ledger (the `"1789053425.550469"` in the ledger example above). The PR title, author display name,
+The `--prompt` string carries only five values, and each one is shape-safe enough to trust
+directly. They are the captain's own session name (confirmed via `ListAgents` at startup), the
+repo as `org/repo`, the PR number, `<ask_ts>` — the Slack message `ts` this ask is keyed under in
+the captain's own ledger (the `"1789053425.550469"` in the ledger example above) — and the
+ledger's `channel_id`. The PR title, author display name,
 and asked-by name never get interpolated into this string, because they are PR-author-controlled
 or Slack-display-name-controlled free text. That is exactly what broke a positional argument once,
 when a two-word `asked_by` shifted every argument after it. It is also exactly what shell injection
 needs. The worker fetches the title, author, URL, head SHA, and any existing reviews or comments
 itself, with its own `gh pr view` call once launched, in `/review-worker-start`'s own first step,
-and it looks up the Slack ask text itself from the `ts` the captain passes. Every one of these four
-values still gets quoted, even though none of them should ever contain a space.
+and it looks up the Slack ask text itself from the `ts` and channel id the captain passes. Every
+one of these five values still gets quoted, even though none of them should ever contain a space.
 
 The launcher's JSON `status` decides what happens next.
 
@@ -252,11 +257,11 @@ Model is `opus` for every review worker. Review is judgment, and the operator ha
 fable for this duty.
 
 The `/review-worker-start` skill (`~/.claude/skills/review-worker-start/SKILL.md`) owns the entire
-worker-side protocol, including the contract, the four-lens review, risk classification,
-criticality calls, and the approve-or-hold split. The captain passes it only the four values
-described above. It never re-types that protocol into a launch prompt, and it never hands the
-worker PR-author-controlled text as a shell argument. The first of those four values is the
-captain's own session name, `armada-reviews`, passed explicitly rather than relied on from
+worker-side protocol, including the captained-operation rules, the four-lens review, risk
+classification, criticality calls, and the approve-or-hold split. The captain passes it only the
+five values described above. It never re-types that protocol into a launch prompt, and it never
+hands the worker PR-author-controlled text as a shell argument. The first of those five values is
+the captain's own session name, passed explicitly rather than relied on from
 `CAPTAIN_SESSION_NAME`, because a known bug in `captain-launch` sets that environment variable to
 the launched worker's own session name on every launch.
 
@@ -351,7 +356,7 @@ from rule 3, or a named anomaly.
 - **Slack is not a system of record.** The thread reply is a marker for humans; the ledger and
   GitHub carry the state.
 - **Do not review your own fleet's PRs twice.** A PR already under another captain's worker (the
-  ask names an ARM ticket a project captain is driving) still gets a review; the reviewer stays
+  ask names a ticket a project captain is driving) still gets a review; the reviewer stays
   read-only, so there is no conflict. Tell the operator both sessions touch it.
 - Stay in this seat. If the operator asks you to fix a PR yourself, say that leaves the captain seat
   and confirm before doing it.

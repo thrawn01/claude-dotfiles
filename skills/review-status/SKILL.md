@@ -1,6 +1,6 @@
 ---
 name: review-status
-description: "One-shot status pass over every PR review-captain is tracking in #armada-privileged-reviews — nudges idle workers to re-fetch their PR's current GitHub state, then reports what's waiting on the operator, unassigned, or updated via Slack since the last tick. Read-only against the ledger; never launches a worker or writes state, that stays review-captain's job."
+description: "One-shot status pass over every PR review-captain is tracking in its privileged-reviews channel — nudges idle workers to re-fetch their PR's current GitHub state, then reports what's waiting on the operator, unassigned, or updated via Slack since the last tick. Read-only against the ledger; never launches a worker or writes state, that stays review-captain's job."
 ---
 
 # Review status — ad hoc report on in-flight reviews
@@ -25,7 +25,7 @@ step forces every idle worker to look again, the way a human would just glance a
 - `gh`, `herdr`, and the Slack read tool are reachable. Degrade per-section (§5) rather than
   stopping entirely if one is down.
 - Runs from anywhere. A `[captain]`-prefixed pane injection carries its own authority regardless
-  of which session sends it, so this doesn't need to run inside the `armada-reviews` session
+  of which session sends it, so this doesn't need to run inside the review captain's session
   itself — though that's the common case, since the operator will usually type it there.
 
 ## 1. Load the ledger (read-only)
@@ -36,7 +36,7 @@ ledger's single writer, and a second writer racing its hourly tick is how entrie
 
 ## 2. Catch anything since the last tick
 
-`slack_read_channel` on `C0BPLP0ML0G`, `oldest` = ledger's `last_seen_ts`. For each message not
+`slack_read_channel` on the ledger's `channel_id`, `oldest` = ledger's `last_seen_ts`. For each message not
 already in the ledger:
 
 - A PR URL with no matching ledger entry → **no worker assigned** bucket. Don't add it to the
@@ -54,7 +54,7 @@ Non-settled = ledger state in `new`, `launched`, `reviewing`, `findings-posted`,
 index-first read.
 
 ```bash
-gh pr view <n> --repo anchorlabsinc/<repo> --json state,isDraft,mergedAt,headRefOid,reviewDecision,reviews,statusCheckRollup,url,title,author
+gh pr view <n> --repo <org>/<repo> --json state,isDraft,mergedAt,headRefOid,reviewDecision,reviews,statusCheckRollup,url,title,author
 ```
 
 Fall back to REST (`gh api repos/.../pulls/<n>`, `.../pulls/<n>/reviews`,
@@ -72,7 +72,7 @@ mid-generation output, **leave it alone** — injecting into a busy worker inter
 no gain. If it's sitting at rest:
 
 ```
-herdr agent prompt <pane> "[captain] status check — re-read PR #<n>'s current state on GitHub right now (gh pr view, checks, reviews, comments) as if you're looking at it fresh, even if you think nothing changed, and re-run your risk classification against the current head. Then SendMessage armada-reviews a normal ## Worker report with your Stage and Risk."
+herdr agent prompt <pane> "[captain] status check — re-read PR #<n>'s current state on GitHub right now (gh pr view, checks, reviews, comments) as if you're looking at it fresh, even if you think nothing changed, and re-run your risk classification against the current head. Then SendMessage your captain (your launch's first argument) a normal ## Worker report with your Stage and Risk."
 ```
 
 Record which panes got nudged this pass so the operator knows which workers might report back in the
