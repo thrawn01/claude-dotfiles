@@ -127,8 +127,9 @@ or, when GraphQL is exhausted:
 gh api -X POST repos/$2/pulls/$3/reviews --input <json with event REQUEST_CHANGES>
 ```
 
-Open the body with one line, "Automated adversarial review on the operator's behalf at `<sha>`" —
-verbatim, never extended with how the review ran. Then one short block per finding, ranked by
+Open the body with one line, "Automated review: <n> merge-blocking issue(s) found at `<sha>`." —
+that exact shape, never extended with how the review ran. It says who is writing and why, and a
+blocking issue is the only reason this review exists, so the opener claims nothing else. Then one short block per finding, ranked by
 severity — file:line, the concrete failure, why it blocks the merge, and whether you confirmed it
 by running something or only read it. Then stop. No summary of what else you checked, no closing
 thoughts, no corrections to the author's reasoning on a point you declined. Nothing you ever write
