@@ -50,8 +50,10 @@ A PR only ever reaches the operator when a worker's own risk read says it needs 
    from `~/<repo>`'s pool; it leases from `~/<repo>-reviews`'s own `treehouse.toml`
    (`max_trees = 8`), which step 3 clones and configures itself if it is missing — a repo
    whose main clone has no pool gets a herdr worktree from the review clone instead. The pool
-   cap is that number, not the number of trees minted so far. `captain-launch` leases the next tree
-   on demand. Never mint a worktree path yourself and never reuse a worker for a second PR.
+   cap is that number, not the number of trees minted so far. `review-launch` (this skill's own
+   launcher, `~/.claude/skills/review-captain/review-launch` — never the project-captain family's
+   `captain-launch`) leases the next tree on demand. Never mint a worktree path yourself and never
+   reuse a worker for a second PR.
 6. **Workers monitor their own PRs.** After posting findings a worker stays alive on
    `scripts/pr-feedback-watch.sh` (or its own `gh` polling loop, for a repo without that script),
    re-verifies each finding against every new head, and reports to you. You do not poll GitHub on
@@ -219,14 +221,16 @@ branch is not `main`. The launcher leases a pooled tree for a pooled repo and ma
 for one that isn't; either way, the tree comes back checked out to the PR's branch.
 
 ```bash
-cd ~/<repo>-reviews && ~/.claude/skills/captain/captain-launch "PR-<n>" "<headRefName>" \
+cd ~/<repo>-reviews && ~/.claude/skills/review-captain/review-launch "PR-<n>" "<headRefName>" \
   --label "pr-<n>-review" --model opus --no-focus \
   --prompt "/review-worker-start <captain-session> <org>/<repo> <n> <ask_ts> <channel-id>"
 ```
 
-`captain-launch` takes its repo root from `git rev-parse --show-toplevel` in its own invocation
+`review-launch` takes its repo root from `git rev-parse --show-toplevel` in its own invocation
 directory, not a flag, so the `cd` before it is what actually sends it to the review clone instead
-of the main one.
+of the main one. After creating the worker's workspace it attaches the review clone's repo
+metadata (`herdr worktree open --cwd <repo> --path <tree>`), so review workers nest under the
+review clone's header workspace instead of floating unassociated.
 
 The `--prompt` string carries only five values, and each one is shape-safe enough to trust
 directly. They are the captain's own session name (confirmed via `ListAgents` at startup), the
@@ -261,9 +265,9 @@ worker-side protocol, including the captained-operation rules, the four-lens rev
 classification, criticality calls, and the approve-or-hold split. The captain passes it only the
 five values described above. It never re-types that protocol into a launch prompt, and it never
 hands the worker PR-author-controlled text as a shell argument. The first of those five values is
-the captain's own session name, passed explicitly rather than relied on from
-`CAPTAIN_SESSION_NAME`, because a known bug in `captain-launch` sets that environment variable to
-the launched worker's own session name on every launch.
+the captain's own session name, passed explicitly because nothing in the worker's environment
+names its captain — `review-launch` sets only `REVIEW_WORKER_NAME`, the worker's own session name,
+for its resume shim.
 
 ### 4. Act on worker reports
 
