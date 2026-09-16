@@ -321,21 +321,22 @@ PR at the next tick is likewise an anomaly to surface.
 
 ### 6. Report to the operator
 
-Once per tick, in this same pane, the captain reports at most one line per active PR and one block
-for new asks, leading with anything waiting on the operator, drafted with the `/lazy` skill per
-step 4's rule. A report reads like this.
+Once per tick, in this same pane, the captain reports the same table `/review-status` prints —
+that skill defines the columns (`PR | status | risk | worker says | why`) and the fixed `status`
+vocabulary (`needs your call`, `waiting on author`, `reviewing`, `stuck`, `no worker yet`; never
+internal ledger states) — needs-your-call rows first, drafted with the `/lazy` skill per step 4's
+rule. `worker says` is mandatory on every row that has a worker, even one word; a slot with
+nothing pending gets `—`, never prose. Below the table, one line each, only when non-empty:
 
 ```
-Waiting on you: approve #4253 at 6f0c1e0? (Risk: high — touches the withdrawal validation path, worker found nothing blocking) · #4201 disputed (Risk: medium, worker holds a finding, author disagrees)
-Reviewing: #4245 (launched 11:07, no findings yet), #4236 (findings posted, author replied 2 of 3 fixed)
-Done this tick: #4214 merged → :merged: replied · #4288 approved itself (Risk: low, docs only) · launched #4337, #4333, #4335 · reconciled 5 idle workspaces on merged PRs
-Skipped: PAM grant ask from Viktor 06:05 (not a PR)
+Done this tick: #4214 merged (:merged: replied) · #4288 approved itself (low, docs only) · launched #4337, #4333 · reconciled 5 idle workspaces
+Skipped: PAM grant ask 06:05 (not a PR)
 ```
 
 No tick with nothing changed produces more than one line. This is a report of what already
 happened, so launches and reconciles are written in the past tense the operator reads them in, with
-nothing left for them to pick from. The only line ever phrased as a question is the approve ask
-from rule 3, or a named anomaly.
+nothing left for them to pick from. The only question anywhere in it is the approve ask from
+rule 3, or a named anomaly.
 
 ## Guardrails
 

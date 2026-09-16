@@ -80,22 +80,37 @@ next few minutes.
 
 ## 5. Compile the report
 
-Print directly — don't `SendMessage` yourself, don't write the ledger. Five buckets, skip any
-that are empty, lead with whichever needs a decision. **"Waiting on you" only ever holds a PR a
-worker classified `Risk: high`, or `Risk: medium` with a judgment call or dispute open** — a
-low-risk or clean-medium PR approves itself and never lands here at all, so this bucket should
-usually be short or empty:
+Print directly — don't `SendMessage` yourself, don't write the ledger. The report is one table,
+needs-your-call rows first:
 
 ```
-Waiting on you: approve #4253 at 6f0c1e0? (Risk: high — touches the withdrawal validation path, worker found nothing blocking but wants your read) · #4201 disputed (Risk: medium, worker holds a finding, author disagrees — see below)
-No worker assigned: #4310 (asked by Priya 09:14, no ledger entry yet — next tick or say go)
-Slack updated: #4245 — author replied "pushed a fix for the nil check" 10 min ago, worker not yet re-verified
-In flight, quiet: #4236 (Risk: medium, findings posted, no reply, 3h) · #4260 (still reviewing, launched 8m ago)
-Nudged this pass: #4236, #4260 (were idle — pinged to re-check GitHub and re-run risk)
+| PR    | status            | risk   | worker says                                                      | why                                                 |
+|-------|-------------------|--------|------------------------------------------------------------------|-----------------------------------------------------|
+| #4333 | needs your call   | high   | no objection — flags the tradeoff as yours, not a recommendation | rewrites the money-path merge gate                  |
+| #4350 | waiting on author | medium | holds a blocking finding                                         | cards.md:35 still names a trigger this diff retires |
+| #4310 | no worker yet     | —      | —                                                                | asked 09:14, next tick picks it up                  |
 ```
 
-If a section degraded (Slack or `gh` unreachable), say so at the top instead of silently omitting
-it.
+`status` uses only these fixed values — never internal ledger vocabulary like `ready-to-approve`
+or `findings-posted`, which nobody reading the table should have to know:
+
+- **needs your call** — high risk, or medium with a judgment call or dispute open. The only rows
+  that ask the operator anything.
+- **waiting on author** — findings posted, not yet resolved at the current head.
+- **reviewing** — a worker is on it, nothing posted yet.
+- **stuck** — halted and unanswered; `why` carries the halt type and the one unblocking action.
+- **no worker yet** — no ledger entry or state `new`; `why` says when it was asked.
+
+Settled PRs (merged / approved / closed) get no row at all unless something about them changed
+since the last tick. **`worker says` is mandatory on every row that has a worker**, even one word
+("clean", "no objection") — an unlabeled blank is how a bare "approve #4333?" once read as a
+recommendation instead of a relay. `risk` is the worker's own tier. `why` is one line of
+substance: the top finding, what makes it high-risk, or the halt. A slot with nothing pending
+gets `—`, never prose.
+
+Below the table, one line each, only when non-empty — `Nudged: #4236, #4260 (were idle)` and
+`Slack: #4245 author says fix pushed, worker not yet re-verified`. If a section degraded (Slack
+or `gh` unreachable), say so above the table instead of silently omitting it.
 
 ## Guardrails
 
