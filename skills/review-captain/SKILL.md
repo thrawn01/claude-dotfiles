@@ -19,7 +19,7 @@ The operator does not have to wait for the hourly tick to see what is in flight.
 
 ## Standing rules
 
-A PR only ever reaches the operator when a worker's own risk read says it needs one. Launching a worker for an open, unapproved PR (step 3) and reconciling a finished worker's workspace (step 5) both run automatically every tick, with no confirmation asked; the captain reports what it already did rather than asking permission first. Approving works the same way. A worker approves a low-risk or clean-medium-risk PR entirely on its own, the same way it already decides on its own judgment whether a finding blocks approval (rule 7). That decision is the worker's own professional read of the code, so there is nothing of the operator's for the captain to verify. Approval needs the captain only when a worker reports a genuine judgment call, a dispute, or anything it classifies as high risk (rule 3), because there a real human decision is actually required. The captain's job is to ask for it and relay the answer back once verified. A tick's report is allowed to end on a question in only two cases, that approval ask or a genuine anomaly the captain cannot resolve on its own, such as a worker halted with nothing in the PR or repo that answers the halt, or a lease still held for a PR that has already merged (step 4). A merged PR with an idle worker on it is not one of those anomalies. It is mechanical instead. The worker is idle and the PR is settled, and the tree is clean by construction. That is the confirmation the captain needs to reconcile it.
+A PR only ever reaches the operator when a worker's own risk read says it needs one. Launching a worker for an open, unapproved PR (step 3) and reconciling a finished worker's workspace (step 5) both run automatically every tick, with no confirmation asked; the captain reports what it already did rather than asking permission first. Approving works the same way. A worker approves a low-risk or clean-medium-risk PR entirely on its own, the same way it already decides on its own judgment whether a finding blocks approval (rule 7). That decision is the worker's own professional read of the code, so there is nothing of the operator's for the captain to verify. Approval needs the captain only when a worker reports a genuine judgment call, a dispute, or anything it classifies as high risk (rule 3), because there a real human decision is actually required. The captain's job is to ask for it and relay the answer back once verified. A tick's report is allowed to leave something waiting on the operator in only two cases, a `needs your call` row in the table or a genuine anomaly the captain cannot resolve on its own, such as a worker halted with nothing in the PR or repo that answers the halt, or a lease still held for a PR that has already merged (step 4). A merged PR with an idle worker on it is not one of those anomalies. It is mechanical instead. The worker is idle and the PR is settled, and the tree is clean by construction. That is the confirmation the captain needs to reconcile it.
 
 1. **Every request in the channel** gets handled, whoever it tags. Non-PR asks (GCP PAM grants,
    console links, bare questions) are recorded as skipped and mentioned to the operator once.
@@ -274,7 +274,13 @@ for its resume shim.
 The captain re-reads the PR from GitHub first; the worker's reported `Stage` is only a hint. Every
 operator-facing line this step produces — the critical-finding relay, the approve ask, the dispute
 summary — is drafted with the `/lazy` skill, the same as step 6's report, so what reaches the
-operator is the fact, not jargon or prose around it. A
+operator is the fact, not jargon or prose around it. **Any worker report that changes a tracked
+PR's ledger `state` fires step 6's full table right away**, not a one-line relay — a worker waking
+mid-hour with `ready-to-approve`, a fresh `disputed`, a resolved `awaiting-resolution`, or an
+`approved`/`merged` is exactly the moment the operator's picture of every open PR is stale, and the
+whole table costs less to read than a bare line plus a mental diff against the last tick. A report
+that re-confirms the same state (a duplicate wake, a nudge answered with no change, an idle notice)
+gets at most one line, no table. A
 worker that could not reach the captain writes the same report to
 `~/captain-notes/worker-reports/PR-<n>.md` instead, so each tick also checks that directory,
 handles anything found there exactly like an arrived report, and deletes the file once it is
@@ -286,12 +292,14 @@ ledgered.
   judgment, no ask of yours involved. Verify the review exists on GitHub, thread reply
   `:approved-github: approved at <sha>`, ledger state `approved`. Nothing for the operator here.
 - A judgment-call finding riding along in a `findings-posted` report (`Risk: medium`) arrives in
-  the report, never on the PR → ledger, and one line to the operator with the top finding. Once the
-  worker holds on it, the `ready-to-approve` bullet below takes over.
+  the report, never on the PR → ledger; the state change fires the full table per this step's rule,
+  with the top finding in that PR's `why`. Once the worker holds on it, the `ready-to-approve`
+  bullet below takes over.
 - `ready-to-approve <sha>` (only reported for `Risk: high`, or medium with a judgment-call finding
-  still open) → ledger, then ask the operator one line in this shape, `approve #<n> at
-  <short sha>? (<worker's one-line summary, plain English on what makes it high-risk if Risk:
-  high>)`. Send a `PushNotification` if the tool is loaded. Nothing else happens until they answer.
+  still open) → ledger, then the full table (this state change qualifies on its own), with this
+  PR's row as `needs your call` and `worker says` carrying the worker's own summary verbatim — not a
+  recommendation unless the worker actually wrote one, per the same distinction step 6 draws. Send
+  a `PushNotification` if the tool is loaded. Nothing else happens until they answer.
 - The operator says yes, here or reported by the worker as said directly in its pane (confirm the latter
   with `herdr pane read <pane> --lines 200` first) → `herdr agent prompt <pane> "[captain] approve
   <sha>"`, ledger `operator_decision: yes@<sha>`. On the worker's `approved` report, verify the
@@ -321,7 +329,8 @@ PR at the next tick is likewise an anomaly to surface.
 
 ### 6. Report to the operator
 
-Once per tick, in this same pane, the captain reports the same table `/review-status` prints —
+Once per tick, and again immediately whenever step 4 finds a worker report that changed a PR's
+ledger state, the captain reports the same table `/review-status` prints —
 that skill defines the columns (`PR | status | risk | worker says | why`) and the fixed `status`
 vocabulary (`needs your call`, `waiting on author`, `reviewing`, `stuck`, `no worker yet`; never
 internal ledger states) — needs-your-call rows first, drafted with the `/lazy` skill per step 4's
@@ -335,8 +344,9 @@ Skipped: PAM grant ask 06:05 (not a PR)
 
 No tick with nothing changed produces more than one line. This is a report of what already
 happened, so launches and reconciles are written in the past tense the operator reads them in, with
-nothing left for them to pick from. The only question anywhere in it is the approve ask from
-rule 3, or a named anomaly.
+nothing left for them to pick from. The only thing in it waiting on the operator is a
+`needs your call` row (rule 3's ask travels as that row, never as a separate question line), or a
+named anomaly.
 
 ## Guardrails
 

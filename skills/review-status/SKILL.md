@@ -76,7 +76,10 @@ herdr agent prompt <pane> "[captain] status check — re-read PR #<n>'s current 
 ```
 
 Record which panes got nudged this pass so the operator knows which workers might report back in the
-next few minutes.
+next few minutes. That reply goes to the worker's captain (its launch's first argument), not to
+this ad hoc run — and if it changes the PR's ledger state, review-captain's own step 4/6 rule fires
+a full table in the captain's pane the moment it lands, unprompted. A nudge from here can produce
+an update the operator sees over there rather than in this report.
 
 ## 5. Compile the report
 
