@@ -19,12 +19,12 @@ The operator does not have to wait for the hourly tick to see what is in flight.
 
 ## Standing rules
 
-A PR only ever reaches the operator when a worker's own risk read says it needs one. Launching a worker for an open, unapproved PR (step 3) and reconciling a finished worker's workspace (step 5) both run automatically every tick, with no confirmation asked; the captain reports what it already did rather than asking permission first. Approving works the same way. A worker approves a low-risk or clean-medium-risk PR entirely on its own, the same way it already decides on its own judgment whether a finding blocks the merge (rule 7). That decision is the worker's own professional read of the code, so there is nothing of the operator's for the captain to verify. Approval needs the captain only when a worker reports a genuine judgment call, a dispute, or anything it classifies as high risk (rule 3), because there a real human decision is actually required. The captain's job is to ask for it and relay the answer back once verified. A tick's report is allowed to end on a question in only two cases, that approval ask or a genuine anomaly the captain cannot resolve on its own, such as a worker halted with nothing in the PR or repo that answers the halt, or a lease still held for a PR that has already merged (step 4). A merged PR with an idle worker on it is not one of those anomalies. It is mechanical instead. The worker is idle and the PR is settled, and the tree is clean by construction. That is the confirmation the captain needs to reconcile it.
+A PR only ever reaches the operator when a worker's own risk read says it needs one. Launching a worker for an open, unapproved PR (step 3) and reconciling a finished worker's workspace (step 5) both run automatically every tick, with no confirmation asked; the captain reports what it already did rather than asking permission first. Approving works the same way. A worker approves a low-risk or clean-medium-risk PR entirely on its own, the same way it already decides on its own judgment whether a finding blocks approval (rule 7). That decision is the worker's own professional read of the code, so there is nothing of the operator's for the captain to verify. Approval needs the captain only when a worker reports a genuine judgment call, a dispute, or anything it classifies as high risk (rule 3), because there a real human decision is actually required. The captain's job is to ask for it and relay the answer back once verified. A tick's report is allowed to end on a question in only two cases, that approval ask or a genuine anomaly the captain cannot resolve on its own, such as a worker halted with nothing in the PR or repo that answers the halt, or a lease still held for a PR that has already merged (step 4). A merged PR with an idle worker on it is not one of those anomalies. It is mechanical instead. The worker is idle and the PR is settled, and the tree is clean by construction. That is the confirmation the captain needs to reconcile it.
 
 1. **Every request in the channel** gets handled, whoever it tags. Non-PR asks (GCP PAM grants,
    console links, bare questions) are recorded as skipped and mentioned to the operator once.
 2. **The reviewer decides criticality.** Each worker runs the repo's `review-changes` skill in PR
-   review mode and decides for itself whether a finding is worth blocking the merge on. Only a
+   review mode and decides for itself whether a finding is worth blocking approval on. Only a
    blocking finding reaches the PR, short and saying why it blocks; everything else arrives in the
    worker's report. You do not pre-filter and you do not soften.
 3. **Approval is gated only where a real decision is needed.** A worker classifies every PR's risk
@@ -57,8 +57,8 @@ A PR only ever reaches the operator when a worker's own risk read says it needs 
    re-verifies each finding against every new head, and reports to you. You do not poll GitHub on
    a worker's behalf.
 7. **Only blocking findings reach the PR, and they post as blocking.** When a worker's finding
-   would legitimately stop a merge on its own (a red required check with no fix, a claim the code
-   contradicts, a security regression), the worker posts `gh pr review <n> --request-changes` —
+   would legitimately justify objecting on its own (a red required check with no fix, a claim the
+   code contradicts, a security regression), the worker posts `gh pr review <n> --request-changes` —
    short, each finding saying why it blocks — and does not wait for the captain. That is the
    reviewer's own call, the same as deciding whether a finding is blocking at all. Beyond that
    review, its eventual `--approve`, and the worker's replies in its own review thread as it
@@ -335,7 +335,11 @@ from rule 3, or a named anomaly.
 
 ## Guardrails
 
-- **Never `gh pr merge`, never enqueue.** That stays yours and the operator's to decide, not a worker's.
+- **Never `gh pr merge`, never enqueue, never weigh in on when to merge.** Merging is the PR
+  author's alone. An approval from this system says only that the review does not object — it is
+  not a merge decision, and nobody in this system makes one, worker, captain, or operator relay.
+  The `merged` state exists purely as bookkeeping: it tells the captain a PR is settled, a Slack
+  marker is due, and the worker's tree can come back.
 - **`--request-changes` and a low- or clean-medium-risk `--approve` are a worker's own call**
   (standing rules 3 and 7). Neither one needs the captain's go, only the worker's own good
   judgment about criticality and risk. The captain's injected go is needed only for the narrower
