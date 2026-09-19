@@ -73,7 +73,9 @@ engineer a subsystem to write this — the framing comes from their description.
    the result, the common variations, the errors they can hit. Make it concrete
    with annotated examples (`<pre>` request/response, real signatures). This
    section must stand on its own — a reader who stops here understands how to
-   *use* the thing.
+   *use* the thing. Load the `writing-prose` skill before drafting this body
+   copy — the reader is meeting the subject for the first time, the same reader
+   that skill writes for.
 4. **Then internals, if relevant.** Only after the above, descend. Frame every
    internal detail as *how the promised outcome is kept*. Internal state walks,
    sequence diagrams, and data structures live here — never above. If the request
@@ -88,27 +90,36 @@ engineer a subsystem to write this — the framing comes from their description.
 Lead with diagrams; prose supports them, not the reverse. The explanation is
 carried by:
 
-- **Diagrams** — SVG/CSS flow, state-machine, boundary, and sequence patterns.
-  Copy them from **`diagrams.md`**, which defines them in terms of the bundled
-  template's design tokens. Add that CSS block to the template's `<style>`.
+- **Diagrams** — flow, state-machine, and sequence diagrams render through
+  Mermaid (the template already loads and themes it); boundary and tree
+  diagrams are plain HTML/CSS. Copy patterns from **`diagrams.md`**, which
+  defines them in terms of the bundled template's design tokens. Keep only the
+  branches/nodes relevant to the point being made — an overstuffed diagram
+  teaches less than a small one.
 - **Annotated examples** — real request/response bodies, function signatures,
   before/after blocks. Use the template's `<pre><code>` with `<span class="cmd">`
   and `<span class="muted">` for emphasis.
 
-No JavaScript interactivity, no animation libraries — the house style is flat and
-mostly static. A state machine is drawn, not animated.
+Mermaid is the one JavaScript dependency the template carries, loaded from
+`cdn.jsdelivr.net` — this means the explainer needs network access to render,
+and is no longer usable fully offline. No other interactivity or animation
+libraries; a state machine is drawn, not animated.
 
 ## Producing the file
 
 1. **Pick the styling source:**
    - If the project has an `html-docs` skill or a `docs/design.md`, follow it —
      copy *its* `template.html` and keep *its* tokens; this skill's diagram
-     patterns still apply (map the colors to the local token names).
+     patterns still apply (map the colors to the local token names). If that
+     template doesn't already load Mermaid, carry over this template's
+     `<script type="module">` block and theme its `themeVariables` to the
+     local tokens.
    - Otherwise use the bundled template:
      `cp ~/.claude/skills/html-explainer/template.html <target>.html`.
 2. **Keep the `<style>` block verbatim** — it is the design system. No CSS
-   framework, no web fonts. Then **append the diagram CSS** from `diagrams.md`
-   (additive, built only on existing `var(--…)` tokens).
+   framework, no web fonts. The bundled template already loads and themes
+   Mermaid; the only diagram CSS to append is the **boundary** pattern from
+   `diagrams.md` (additive, built only on existing `var(--…)` tokens).
 3. **Write the body** following the outside-in order above, using the template's
    component vocabulary (`.lead`, `.grid2`/`.card`, `.callout`, `.pill`,
    `.layers`, `<pre>`, `<table>`) plus the diagram snippets. Single centred
@@ -124,6 +135,10 @@ mostly static. A state machine is drawn, not animated.
    `curl -s -o /dev/null -w "%{http_code}" http://localhost:8090/<file>.html`
    (expect 200). If `peep` isn't installed, tell the user the file path so they
    can open it directly.
+6. **Publish it.** Once it loads clean, publish the file as a Claude Artifact
+   (the `Artifact` tool, `action: publish`) so the user gets a shareable link —
+   do this by default, every time, unless the user has said not to. Give it a
+   title and a favicon that fit the subject.
 
 Default target: write beside the source it explains (e.g.
 `docs/<thing>-explainer.html`), or a scratch/temp dir for a quick throwaway.
