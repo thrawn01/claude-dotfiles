@@ -480,54 +480,58 @@ Can I assert the result through the public interface?
                   that serves both tests and production users
 ```
 
+## Repositories and Gateways: Fakes Verified by Contract Tests
+
+Some tests don't care how an external dependency behaves — they exercise business logic and use the dependency only as passive state or as a place to send work. For those tests, the real dependency is unnecessary overhead. To take a faster path without losing the real dependency as a safety net, put access to it behind a domain interface: a **repository** when the dependency holds a collection of domain objects (orders, accounts), a **gateway** when it is any other external system (a payment provider, a command-line tool). The real implementation is an adapter for the dependency. The in-memory implementation is a fake.
+
+A repository or gateway is the boundary of your deployment unit, not its inside, so substituting it does not break the rule against substituting internal components.
+
+```go
+type OrderRepository interface {
+    Save(ctx context.Context, order Order) error
+    Get(ctx context.Context, id string) (Order, error)
+    ListPending(ctx context.Context) ([]Order, error)
+}
+
+type PostgresOrderRepository struct { /* real adapter */ }
+type InMemoryOrderRepository struct { /* map-backed fake */ }
+```
+
+Tests inject whichever implementation fits the scenario:
+
+- **Tests exercising the dependency's own behavior** (for a database: complex queries, constraints, transactions, migrations) — the real adapter, against the real dependency (for a database, `PostgresOrderRepository` wired via testcontainers).
+- **Tests exercising business logic that happens to use the dependency** — the fake, for speed.
+
+Both paths still enter through the surface. The implementation choice is an injected dependency, not a shortcut around the surface. Never substitute the repository or gateway with a mock that asserts `verify { repository.save(any()) }` — that's testing implementation. The fake is a *working* implementation: it holds state, returns data, and enforces the rules the real dependency enforces. Tests assert on observable results through the surface, not on which methods were called.
+
+### The Cost of Building a Fake
+
+Building a fake is not a free optimization. It introduces a second implementation that must remain behaviorally equivalent to the real dependency — and the two *will* drift. Every new feature that adds an operation or a rule adds surface area where drift can happen silently.
+
+**If you build one, verify it with contract tests.** Two valid models:
+
+- **Option 1 — Full suite against both implementations.** Every test that touches the repository or gateway runs twice (real + fake). Highest cost, highest safety. Right when the fake is *also a deployment target* (embedded/e2e mode) — it's production code and deserves full validation.
+- **Option 2 — Dedicated contract tests.** A focused suite validates both implementations behave identically for the operations the app uses; feature tests pick one implementation (the real adapter by default, the fake when speed matters) and trust the contract tests to catch drift. Lower cost, reasonable safety. Right when the fake exists *only to speed up tests* — doubling the full suite rarely pays for itself.
+
+Pick based on whether the fake is a product feature or a test optimization.
+
+### The Embedded-Mode Advantage
+
+A well-designed fake gives you more than test speed. It lets the service run in "embedded" or "integration" mode — no database, no external services, no network hops — which is valuable for:
+
+- End-to-end tests that exercise multiple services together in a controlled environment.
+- Limited deployment environments where running the full set of dependencies isn't practical.
+- Local development loops where iterating against the real dependency would slow things down.
+
+If your service needs any of these, the fake pays for itself beyond tests, and that's often what tips the decision toward building one — and toward Option 1.
+
 ## Databases Are a Special Case
 
 Databases sit outside your surface — they are external dependencies — but they are the most tightly coupled external dependency your system has. Query semantics, transaction boundaries, isolation levels, constraint behaviors, and migration correctness all live in the database. Hand-written database fakes and in-memory substitutes almost always diverge from the real database in ways that matter (transaction and rollback semantics, null ordering, unique-constraint timing, and row-level locking are common traps).
 
 **The default: use the real database.** Start it with testcontainers or a local instance wired for tests. This is the only way to exercise the real driver, the real wire protocol, the real query planner, and the real constraint system. It's also the only way to catch migration bugs — so **use your real migrations in tests too**, never inline schema creation. The migrations themselves are part of what the test validates.
 
-### The Store/Repository Pattern Lets You Opt Into Speed
-
-Some tests don't care about database behavior — they exercise business logic and only use the database as passive state. For those tests, a real database is unnecessary overhead. To opt into a faster path without losing the real-database safety net, structure data access behind a store interface (sometimes called a repository):
-
-```go
-type OrderStore interface {
-    Save(ctx context.Context, order Order) error
-    Get(ctx context.Context, id string) (Order, error)
-    ListPending(ctx context.Context) ([]Order, error)
-}
-
-type PostgresOrderStore struct { /* real impl */ }
-type InMemoryOrderStore struct { /* map-backed impl */ }
-```
-
-Tests inject whichever store fits the scenario:
-
-- **Tests exercising database-adjacent behavior** (complex queries, constraints, transactions, migrations) — `PostgresOrderStore` wired via testcontainers.
-- **Tests exercising business logic that happens to persist state** — `InMemoryOrderStore` for speed.
-
-Both paths still enter through the surface. The store choice is an injected dependency, not a shortcut around the surface. Never substitute the store with a mock that asserts `verify { store.save(any()) }` — that's testing implementation. The in-memory store is a *real* implementation: it persists and returns data. Tests assert on observable results through the surface, not on which store methods were called.
-
-### The Cost of Building an In-Memory Store
-
-Building an in-memory store is not a free optimization. It introduces a second implementation of your data layer that must remain behaviorally equivalent to the real database — and the two *will* drift. Every new feature that adds a query or a constraint adds surface area where drift can happen silently.
-
-**If you build one, you must test for parity.** Two valid models:
-
-- **Option 1 — Full suite against both implementations.** Every store-touching test runs twice (real DB + in-memory). Highest cost, highest safety. Right when the in-memory store is *also a deployment target* (embedded/e2e mode) — it's production code and deserves full validation.
-- **Option 2 — Dedicated store-contract suite.** A focused suite validates both implementations behave identically for the operations the app uses; feature tests pick one store (real DB by default, in-memory when speed matters) and trust the contract suite to catch drift. Lower cost, reasonable safety. Right when the in-memory store exists *only to speed up tests* — doubling the full suite rarely pays for itself.
-
-Pick based on whether the in-memory path is a product feature or a test optimization.
-
-### The Embedded-Mode Advantage
-
-A well-designed in-memory store gives you more than test speed. It lets the service run in "embedded" or "integration" mode — no database, no network hops — which is valuable for:
-
-- End-to-end tests that exercise multiple services together in a controlled environment.
-- Limited deployment environments where running a full database stack isn't practical.
-- Local development loops where iterating against a real database would slow things down.
-
-If your service needs any of these, the in-memory store pays for itself beyond tests, and that's often what tips the decision toward building one — and toward Option 1 parity testing.
+When some tests use the database only as passive state, a repository with a fake gives them a faster path; see [Repositories and Gateways](#repositories-and-gateways-fakes-verified-by-contract-tests). The traps above are why that fake needs contract tests.
 
 ## Language-Specific Rules
 
