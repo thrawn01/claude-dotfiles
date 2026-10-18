@@ -18,7 +18,7 @@ This skill requires a filesystem, the source code, and the ability to run the te
 
 ## How this differs from neighboring skills
 
-- **`blueprint-review`** reviews the Blueprint against itself — checking the document for gaps, inconsistencies, and unresolved questions. `review-tests` reviews *code* (the tests) against the Blueprint.
+- **`dispatch:design-review`** reviews the Blueprint against itself — checking the document for gaps, inconsistencies, and unresolved questions. `review-tests` reviews *code* (the tests) against the Blueprint.
 - **`review-validate`** validates a list of *already-identified bugs*, proves each with a failing test, then fixes. `review-tests` starts from the *Blueprint*, finds *untested* behavior, and writes tests to cover it. When `review-tests` discovers that the implementation doesn't actually satisfy a documented criterion, it flags that as a behavior gap — it does not fix the implementation. Handing the flagged behavior gaps to `review-validate` is a reasonable follow-up.
 - **`surface-testing`** is the *philosophy* this skill enforces. The implementer phase follows it exactly. Read it; this skill assumes its rules.
 

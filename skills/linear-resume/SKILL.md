@@ -2,15 +2,13 @@
 name: linear-resume
 description: "Resume in-flight work tracked in Linear by reading the latest handoff and surfacing
   where things stand + the reasoned next step. READ-ONLY: it reads, it does not branch, set up a
-  worktree, change ticket status, or post anything — except a captained worker
-  (CAPTAIN_SESSION_NAME set) resuming its own ticket, which continues into implementation under
-  the captain worker contract after the read. Use when the user says 'resume <project>',
+  worktree, change ticket status, or post anything. Use when the user says 'resume <project>',
   'where did we leave off', 'pick up the git-server build', 'what's next on this ticket',
   '/linear-resume', or hands a Linear project/epic/ticket link and wants to continue. Two modes:
-  (1) hand it a PROJECT or EPIC to learn which ticket is next, then run /linear-start <ticket>;
+  (1) hand it a PROJECT or EPIC to learn which ticket is next, then move it to In Progress for dispatch;
   (2) hand it a single TICKET to re-hydrate a long-running, multi-session effort on that one ticket.
-  Do NOT use to start work on a fresh ticket (that's /linear-start, run inside the ticket's
-  worktree) or to write a handoff (that's /linear-handoff)."
+  Do NOT use to start work on a fresh ticket (dispatch launches /dispatch:build for that) or to
+  write a handoff (that's /linear-handoff)."
 argument-hint: "[project-name | epic-or-ticket-id-or-url]"
 allowed-tools: [Bash, Read, Edit, Write, Grep, Glob, AskUserQuestion, Skill, SendMessage, ListAgents]
 ---
@@ -19,8 +17,7 @@ allowed-tools: [Bash, Read, Edit, Write, Grep, Glob, AskUserQuestion, Skill, Sen
 
 Read the **latest handoff** for whatever the user is resuming and turn it into a resume-from-here
 brief: where the build/ticket is, the open loose ends, and the reasoned next step. This skill is the
-**read** counterpart to `/linear-handoff` (which writes the handoff) and the step that usually
-precedes `/linear-start` (which begins the ticket). It is strictly **read-only** — it never
+**read** counterpart to `/linear-handoff` (which writes the handoff). It is strictly **read-only** — it never
 branches, creates a worktree, advances a ticket's status, or posts a comment/update.
 
 ## Prerequisites
@@ -99,25 +96,14 @@ single ticket's handoff, frame the next step as continuing *that* ticket.
 **Do not assert state the handoff did not claim.** If the handoff says "CI unverified," carry that
 caveat forward — do not upgrade it to "green."
 
-## 4. Hand off to the next action (suggest, never execute — unless captained)
+## 4. Hand off to the next action (suggest, never execute)
 
-**Captained worker resuming its own ticket:** when the `CAPTAIN_SESSION_NAME` environment
-variable is set (this session was launched by `/captain` via `captain-launch`) and the resumed
-ticket is the one this session's branch belongs to, do not stop at the brief — the captain
-already made the worktree decision by launching you here. Surface the brief (§3), then continue
-the ticket's work under the **captain worker contract**
-(`~/.claude/skills/shared/captain-worker-contract.md`): drive to gate 1 (PR open, CI green) or a
-typed halt, and send the contract's report to `$CAPTAIN_SESSION_NAME` before going idle. The
-read-only rule applies to the *resume read* — never upgrade the handoff's claims, never rewrite
-history — not to the work itself. Cross-ticket results (the handoff points at a different ticket)
-still stop here: launching tickets is the captain's job, not yours.
-
-Otherwise (standalone), end by pointing at the next command — but **do not run it**; the user
+End by pointing at the next command — but **do not run it**; the user
 drives:
 
 - **Cross-ticket** (you resumed a project/epic and the next step is a *different* ticket) → give
-  the ticket's `gitBranchName` and suggest creating its worktree with the user's wrapper (e.g.
-  `claude-branch <gitBranchName>`), then running `/linear-start <TEAM>-<NUM>` inside it.
+  the ticket's id and suggest moving it to In Progress, so dispatch launches a
+  `/dispatch:build <TEAM>-<NUM>` worker for it.
 - **Same-ticket** (you resumed one ticket to continue it) → if a worktree/branch for it already
   exists, give the user its path or branch to reopen (e.g. via `claude-branch <branch>`); if not,
   suggest creating it the same way. Either way, this skill does not touch git.
@@ -126,9 +112,8 @@ drives:
 
 - **READ-ONLY.** Never `git worktree add` / branch / checkout, never `save_issue` (no status or
   assignee change), never `save_comment` / `save_status_update`. Resume informs the next action; it
-  is not the next action. **One carve-out:** a captained worker resuming its own ticket (§4)
-  continues the work after the read — the read-only rule bounds the resume, not the session.
-- Do not invoke `/linear-start` or `/linear-handoff` for the user — suggest the command and let them
+  is not the next action.
+- Do not move tickets or invoke `/linear-handoff` for the user — suggest the command and let them
   decide.
 - Do not re-derive sequencing the handoff already reasoned out — carry its "next" forward; only flag
   it if it's stale or wrong.

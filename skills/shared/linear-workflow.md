@@ -1,8 +1,7 @@
 # Linear Workflow — shared procedure
 
 Canonical procedure for the Linear-id-driven feature workflow, shared by
-`blueprint-create`, `linear-start`, `linear-handoff`, and the ticket-creation
-and PR skills. Behavior lives here; skills reference this file instead of
+`linear-handoff` and the PR skills. Behavior lives here; skills reference this file instead of
 copying it.
 
 Human-facing contract (when present in the target repo): `CONTRIBUTING.md` at the
@@ -11,8 +10,7 @@ in the mono-repo.
 
 ## When to run
 
-At the point a skill needs to name the feature directory (`blueprint-create`:
-when locating or creating the feature dir). First check the
+At the point a skill needs to name the feature directory. First check the
 section 0 precondition — if Linear isn't in use here, take the plain-slug fallback
 and skip the rest. Otherwise **resolve the Linear id FIRST** — the directory and
 branch are named from it.
