@@ -105,7 +105,7 @@ drives:
   the ticket's id and suggest moving it to In Progress, so dispatch launches a
   `/dispatch:build <TEAM>-<NUM>` worker for it.
 - **Same-ticket** (you resumed one ticket to continue it) → if a worktree/branch for it already
-  exists, give the user its path or branch to reopen (e.g. via `claude-branch <branch>`); if not,
+  exists, give the user its path or branch to reopen (e.g. via `claude-workspace <branch>`); if not,
   suggest creating it the same way. Either way, this skill does not touch git.
 
 ## Boundaries
@@ -119,12 +119,6 @@ drives:
   it if it's stale or wrong.
 
 ## Early exits
-
-Captained sessions (§4) convert every "ask/offer the user" below into a typed halt per the worker
-contract's conversion rule (`blocked_on_human`; no Linear MCP → `blocked_on_access`) — with one
-override: **no handoff comment on your own ticket is not a blocker.** A worker relaunched
-mid-first-session has no handoff yet by definition — reconstruct from the ticket body + branch
-state and continue to gate 1; do not offer to resume the project instead.
 
 | Condition | Action |
 |---|---|
